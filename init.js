@@ -171,6 +171,12 @@ function injectIntoHtml(htmlPath, options = {}) {
     html = html.replace("</body>", widgetScript + "  </body>");
   }
 
+  if (options.buildInfoScript && !html.includes("build-info.js")) {
+    const buildInfoTag =
+      '    <script type="module" src="/assets/scripts/build-info.js"></script>\n';
+    html = html.replace("</body>", buildInfoTag + "  </body>");
+  }
+
   if (options.pwaManifest && !html.includes("manifest.json")) {
     const pwaTags =
       '    <link rel="manifest" href="/manifest.json">\n' +
@@ -204,6 +210,9 @@ function detectMissing() {
     }
     if (!indexHtml.includes("active-theme")) {
       missing.push('<style id="active-theme"> in index.html');
+    }
+    if (!indexHtml.includes("build-info.js")) {
+      missing.push("build-info.js script tag in index.html");
     }
   }
 
@@ -403,7 +412,11 @@ function stepScaffold() {
     fs.mkdirSync("assets/scripts", { recursive: true });
     if (!assetsScriptsExisted) track(path.resolve("assets/scripts"));
 
-    copyTemplate("build-info.js", path.resolve("assets/scripts/build-info.js"), {});
+    copyTemplate(
+      "build-info.js",
+      path.resolve("assets/scripts/build-info.js"),
+      {},
+    );
     injectIntoHtml(path.resolve("index.html"), {
       googleFonts: true,
       voidTheme: true,
@@ -447,11 +460,16 @@ function stepScaffold() {
     fs.mkdirSync("assets/scripts", { recursive: true });
     if (!reactScriptsExisted) track(path.resolve("assets/scripts"));
 
-    copyTemplate("build-info.js", path.resolve("assets/scripts/build-info.js"), {});
+    copyTemplate(
+      "build-info.js",
+      path.resolve("assets/scripts/build-info.js"),
+      {},
+    );
     injectIntoHtml(path.resolve("index.html"), {
       googleFonts: true,
       voidTheme: true,
       widgetTag: true,
+      buildInfoScript: true,
     });
   }
 
@@ -710,11 +728,28 @@ async function upgradePatch() {
       googleFonts: true,
       voidTheme: true,
       widgetTag: true,
+      buildInfoScript: true,
     });
   }
 
   fs.mkdirSync(path.resolve("assets/scripts"), { recursive: true });
-  copyTemplate("build-info.js", path.resolve("assets/scripts/build-info.js"), {});
+  copyTemplate(
+    "build-info.js",
+    path.resolve("assets/scripts/build-info.js"),
+    {},
+  );
+
+  for (const oldPath of ["build-info.js", "src/build-info.js"]) {
+    const full = path.resolve(oldPath);
+    if (fs.existsSync(full)) {
+      fs.rmSync(full);
+      console.log(
+        YELLOW +
+          `🗑️  Removed old ${oldPath} (moved to assets/scripts/)` +
+          RESET,
+      );
+    }
+  }
 
   const workflowsDir = path.resolve(".github/workflows");
   if (fs.existsSync(workflowsDir)) {
@@ -736,7 +771,7 @@ async function upgradePatch() {
 
 function upgradeFinalize() {
   execSync("git add .", { stdio: "inherit" });
-  execSync('git commit -m "chore: apply bepy-project-init upgrade"', {
+  execSync('git commit -m "MAJOR: apply bepy-project-init upgrade"', {
     stdio: "inherit",
   });
   console.log(
