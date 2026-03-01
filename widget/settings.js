@@ -2,11 +2,9 @@
   // ─── Constants ────────────────────────────────────────────────────────────
 
   const AUTHOR = {
-    name: "YOUR_NAME",
-    company: "YOUR_COMPANY",
-    location: "YOUR_LOCATION",
-    github: "YOUR_GITHUB_URL",
-    youtube: "YOUR_YOUTUBE_URL",
+    name: "SirBepy",
+    github: "https://github.com/sirbepy",
+    youtube: "https://youtube.com/@sirbepy",
   };
 
   const FEEDBACK_URL = "https://forms.gle/AGPabTu624aMaayE7";
@@ -211,10 +209,10 @@
     aboutName.textContent = AUTHOR.name;
     elPanel.appendChild(aboutName);
 
-    const aboutMeta = document.createElement("div");
-    aboutMeta.className = "tl-about-meta";
-    aboutMeta.textContent = AUTHOR.company + " · " + AUTHOR.location;
-    elPanel.appendChild(aboutMeta);
+    // const aboutMeta = document.createElement("div");
+    // aboutMeta.className = "tl-about-meta";
+    // aboutMeta.textContent = AUTHOR.company + " · " + AUTHOR.location;
+    // elPanel.appendChild(aboutMeta);
 
     const aboutLinks = document.createElement("div");
     aboutLinks.className = "tl-about-links";
@@ -245,7 +243,8 @@
 
     const feedbackText = document.createElement("div");
     feedbackText.className = "tl-feedback-text";
-    feedbackText.textContent = "Help improve this toolkit — share your thoughts.";
+    feedbackText.textContent =
+      "Help improve this toolkit — share your thoughts.";
     elPanel.appendChild(feedbackText);
 
     const feedbackBtn = document.createElement("a");
@@ -377,10 +376,14 @@
       await Promise.all(
         FALLBACK_THEMES.map(function (name) {
           return fetch("/assets/themes/theme-" + name + ".css").then(
-            function (r) { return r.ok ? name : null; },
-            function () { return null; }
+            function (r) {
+              return r.ok ? name : null;
+            },
+            function () {
+              return null;
+            },
           );
-        })
+        }),
       )
     ).filter(Boolean);
     renderThemeButtons(available);
