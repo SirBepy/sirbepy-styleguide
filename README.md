@@ -30,7 +30,7 @@ For PWA icon generation only:
 ### 1. Clone this repo
 
 ```bash
-git clone https://github.com/YOUR_USERNAME/bepy-project-init ~/scripts
+git clone https://github.com/sirbepy/bepy-project-init ~/scripts
 ```
 
 ### 2. Make the launcher executable (macOS/Linux)
@@ -45,11 +45,9 @@ Open `~/scripts/widget/settings.js` and fill in the `AUTHOR` constant at the top
 
 ```js
 const AUTHOR = {
-  name: "Your Name",
-  company: "Your Company",
-  location: "Your City",
-  github: "https://github.com/YOUR_USERNAME",
-  youtube: "https://youtube.com/YOUR_CHANNEL",
+  name: "SirBepy",
+  github: "https://github.com/sirbepy",
+  youtube: "https://youtube.com/@sirbepy",
 };
 ```
 
