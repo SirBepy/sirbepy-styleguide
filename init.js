@@ -194,12 +194,12 @@ const isWorkflow = (f) => f.endsWith(".yml") || f.endsWith(".yaml");
 function detectMissing() {
   const missing = [];
 
-  const themesDir = path.resolve("assets/themes");
+  const themesDir = path.resolve("assets/styles/themes");
   if (
     !fs.existsSync(themesDir) ||
     fs.readdirSync(themesDir).filter((f) => f.endsWith(".css")).length === 0
   ) {
-    missing.push("assets/themes/*.css");
+    missing.push("assets/styles/themes/*.css");
   }
 
   const indexPath = path.resolve("index.html");
@@ -382,18 +382,7 @@ function stepScaffold() {
       PROJECT_NAME: projectName,
     });
 
-    const srcExisted = fs.existsSync("src");
-    fs.mkdirSync("src", { recursive: true });
-    if (!srcExisted) track(path.resolve("src"));
-
-    copyTemplate("vite/main.js", path.resolve("src/main.js"), {});
-
     fs.rmSync("main.js", { force: true });
-
-    const styleScssIsNew = !fs.existsSync(path.resolve("src/style.scss"));
-    assertSafeToOverwrite(path.resolve("src/style.scss"));
-    fs.writeFileSync(path.resolve("src/style.scss"), "/* Styles */\n");
-    if (styleScssIsNew) track(path.resolve("src/style.scss"));
 
     const assetsIconsExisted = fs.existsSync("assets/icons");
     fs.mkdirSync("assets/icons", { recursive: true });
@@ -402,21 +391,23 @@ function stepScaffold() {
     fs.mkdirSync("assets/images", { recursive: true });
     if (!assetsImagesExisted) track(path.resolve("assets/images"));
 
-    const assetsThemesExisted = fs.existsSync("assets/themes");
-    fs.mkdirSync("assets/themes", { recursive: true });
-    if (!assetsThemesExisted) track(path.resolve("assets/themes"));
+    const assetsStylesExisted = fs.existsSync("assets/styles");
+    fs.mkdirSync("assets/styles/themes", { recursive: true });
+    if (!assetsStylesExisted) track(path.resolve("assets/styles"));
     console.log(YELLOW + "🎨 Downloading themes..." + RESET);
-    downloadThemes(path.resolve("assets/themes"));
+    downloadThemes(path.resolve("assets/styles/themes"));
+
+    const styleScssIsNew = !fs.existsSync(path.resolve("assets/styles/style.scss"));
+    assertSafeToOverwrite(path.resolve("assets/styles/style.scss"));
+    fs.writeFileSync(path.resolve("assets/styles/style.scss"), "/* Styles */\n");
+    if (styleScssIsNew) track(path.resolve("assets/styles/style.scss"));
 
     const assetsScriptsExisted = fs.existsSync("assets/scripts");
     fs.mkdirSync("assets/scripts", { recursive: true });
     if (!assetsScriptsExisted) track(path.resolve("assets/scripts"));
 
-    copyTemplate(
-      "build-info.js",
-      path.resolve("assets/scripts/build-info.js"),
-      {},
-    );
+    copyTemplate("vite/main.js", path.resolve("assets/scripts/main.js"), {});
+    copyTemplate("build-info.js", path.resolve("assets/scripts/build-info.js"), {});
     injectIntoHtml(path.resolve("index.html"), {
       googleFonts: true,
       voidTheme: true,
@@ -433,12 +424,6 @@ function stepScaffold() {
       PROJECT_NAME: projectName,
     });
     copyTemplate("react/main.jsx", path.resolve("src/main.jsx"), {});
-    const indexScssIsNew = !fs.existsSync(path.resolve("src/index.scss"));
-    assertSafeToOverwrite(path.resolve("src/index.scss"));
-    fs.writeFileSync(path.resolve("src/index.scss"), "/* Styles */\n");
-    if (indexScssIsNew) track(path.resolve("src/index.scss"));
-    copyTemplate("react/App.scss", path.resolve("src/App.scss"), {});
-
     const srcComponentsExisted = fs.existsSync("src/components");
     fs.mkdirSync("src/components", { recursive: true });
     if (!srcComponentsExisted) track(path.resolve("src/components"));
@@ -450,21 +435,23 @@ function stepScaffold() {
     fs.mkdirSync("assets/images", { recursive: true });
     if (!reactImagesExisted) track(path.resolve("assets/images"));
 
-    const reactThemesExisted = fs.existsSync("assets/themes");
-    fs.mkdirSync("assets/themes", { recursive: true });
-    if (!reactThemesExisted) track(path.resolve("assets/themes"));
+    const reactStylesExisted = fs.existsSync("assets/styles");
+    fs.mkdirSync("assets/styles/themes", { recursive: true });
+    if (!reactStylesExisted) track(path.resolve("assets/styles"));
     console.log(YELLOW + "🎨 Downloading themes..." + RESET);
-    downloadThemes(path.resolve("assets/themes"));
+    downloadThemes(path.resolve("assets/styles/themes"));
+
+    const indexScssIsNew = !fs.existsSync(path.resolve("assets/styles/index.scss"));
+    assertSafeToOverwrite(path.resolve("assets/styles/index.scss"));
+    fs.writeFileSync(path.resolve("assets/styles/index.scss"), "/* Styles */\n");
+    if (indexScssIsNew) track(path.resolve("assets/styles/index.scss"));
+    copyTemplate("react/App.scss", path.resolve("assets/styles/App.scss"), {});
 
     const reactScriptsExisted = fs.existsSync("assets/scripts");
     fs.mkdirSync("assets/scripts", { recursive: true });
     if (!reactScriptsExisted) track(path.resolve("assets/scripts"));
 
-    copyTemplate(
-      "build-info.js",
-      path.resolve("assets/scripts/build-info.js"),
-      {},
-    );
+    copyTemplate("build-info.js", path.resolve("assets/scripts/build-info.js"), {});
     injectIntoHtml(path.resolve("index.html"), {
       googleFonts: true,
       voidTheme: true,
@@ -502,14 +489,14 @@ async function stepStyleguide() {
 
   console.log(YELLOW + "🎨 Setting up styleguide..." + RESET);
 
-  copyTemplate("styleguide.scss", path.resolve("src/styleguide.scss"), {});
+  copyTemplate("styleguide.scss", path.resolve("assets/styles/styleguide.scss"), {});
 
   if (framework === "vite") {
-    copyTemplate("vite/style.scss", path.resolve("src/style.scss"), {});
+    copyTemplate("vite/style.scss", path.resolve("assets/styles/style.scss"), {});
   }
   if (framework === "react") {
-    copyTemplate("react/index.scss", path.resolve("src/index.scss"), {});
-    copyTemplate("react/App.scss", path.resolve("src/App.scss"), {});
+    copyTemplate("react/index.scss", path.resolve("assets/styles/index.scss"), {});
+    copyTemplate("react/App.scss", path.resolve("assets/styles/App.scss"), {});
   }
 
   console.log(GREEN + "✅ Styleguide ready." + RESET);
@@ -717,8 +704,18 @@ async function upgradeDetect() {
 }
 
 async function upgradePatch() {
-  const themesDir = path.resolve("assets/themes");
+  const themesDir = path.resolve("assets/styles/themes");
   fs.mkdirSync(themesDir, { recursive: true });
+
+  const oldThemesDir = path.resolve("assets/themes");
+  if (fs.existsSync(oldThemesDir)) {
+    for (const f of fs.readdirSync(oldThemesDir)) {
+      fs.renameSync(path.join(oldThemesDir, f), path.join(themesDir, f));
+    }
+    fs.rmdirSync(oldThemesDir);
+    console.log(YELLOW + "📁 Moved assets/themes/ → assets/styles/themes/" + RESET);
+  }
+
   console.log(YELLOW + "🎨 Downloading themes..." + RESET);
   downloadThemes(themesDir);
 
@@ -788,7 +785,14 @@ function upgradeFinalize() {
 // ─── Main entry point ──────────────────────────────────────────────────────────
 
 async function main() {
-  console.log(GREEN + "🚀 Web Project Initializer" + RESET);
+  let version = "";
+  try {
+    const pkg = JSON.parse(
+      fs.readFileSync(path.join(scriptDir, "package.json"), "utf8"),
+    );
+    if (pkg.version) version = " v" + pkg.version;
+  } catch (e) {}
+  console.log(GREEN + "🚀 Web Project Initializer" + version + RESET);
   await modeSelect();
 
   if (upgradeMode) {
