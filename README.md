@@ -22,6 +22,7 @@ Scaffolds a new Vite (vanilla JS) or React project with a consistent, opinionate
 - Git
 
 For PWA icon generation only:
+
 - `sharp` installed globally: `npm install -g sharp`
 
 ## One-time setup
@@ -59,26 +60,28 @@ This shows up in the About section of the settings panel in every generated proj
 Navigate to an **empty folder** where you want your project, then run:
 
 **macOS/Linux:**
+
 ```bash
 ~/scripts/init.sh
 ```
 
 **Windows (PowerShell):**
+
 ```powershell
 ~/scripts/init.ps1
 ```
 
 The script auto-updates itself from GitHub on each run, then walks you through:
 
-| Prompt | Options |
-|---|---|
+| Prompt                  | Options                                      |
+| ----------------------- | -------------------------------------------- |
 | What do you want to do? | `1` Create new project, `2` Upgrade existing |
-| Project name? | Defaults to folder name |
-| Rename folder to match? | `y` / `n` |
-| Project description? | Optional, written into `package.json` |
-| Framework? | `1` Vite (vanilla JS), `2` React |
-| Set up styleguide? | `Y` / `n` — default yes |
-| Set up as PWA? | `y` / `N` — default no |
+| Project name?           | Defaults to folder name                      |
+| Rename folder to match? | `y` / `n`                                    |
+| Project description?    | Optional, written into `package.json`        |
+| Framework?              | `1` Vite (vanilla JS), `2` React             |
+| Set up styleguide?      | `Y` / `n` — default yes                      |
+| Set up as PWA?          | `y` / `N` — default no                       |
 
 If you choose PWA, you'll also be asked for a hex theme color and an optional SVG icon path.
 
@@ -138,12 +141,12 @@ my-project/
 
 Four themes are included out of the box, all using CSS custom properties:
 
-| Theme | Description |
-|---|---|
-| **Void** | Dark purple — default |
-| **Glacier** | Cool blue-grey |
-| **Cosmo** | Vibrant and colorful |
-| **Nebula** | Deep space tones |
+| Theme       | Description           |
+| ----------- | --------------------- |
+| **Void**    | Dark purple — default |
+| **Glacier** | Cool blue-grey        |
+| **Cosmo**   | Vibrant and colorful  |
+| **Nebula**  | Deep space tones      |
 
 Themes live in `assets/themes/` as plain CSS files. The active theme is stored in `localStorage`. Users can switch themes live via the settings panel.
 
