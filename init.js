@@ -216,7 +216,13 @@ function detectMissing() {
     }
   }
 
-  if (!fs.existsSync(path.resolve("assets/scripts/build-info.js"))) {
+  const buildInfoLocations = [
+    "assets/scripts/build-info.js",
+    "assets/build-info.js",
+    "build-info.js",
+    "src/build-info.js",
+  ];
+  if (!buildInfoLocations.some((p) => fs.existsSync(path.resolve(p)))) {
     missing.push("assets/scripts/build-info.js");
   }
 
@@ -229,6 +235,76 @@ function detectMissing() {
   }
 
   return missing;
+}
+
+const CONFIG_RE = /\.config\.(js|ts|mjs|cjs)$/;
+
+function detectMisplaced() {
+  const misplaced = [];
+
+  if (fs.existsSync("assets")) {
+    for (const entry of fs.readdirSync("assets", { withFileTypes: true })) {
+      if (!entry.isFile()) continue;
+      const name = entry.name;
+      if (name.endsWith(".js")) {
+        misplaced.push(`assets/${name} → assets/scripts/${name}`);
+      } else if (name.endsWith(".css") || name.endsWith(".scss")) {
+        misplaced.push(`assets/${name} → assets/styles/${name}`);
+      }
+    }
+  }
+
+  for (const entry of fs.readdirSync(".", { withFileTypes: true })) {
+    if (!entry.isFile()) continue;
+    const name = entry.name;
+    if (name.startsWith(".") || CONFIG_RE.test(name)) continue;
+    if (name.endsWith(".js")) {
+      misplaced.push(`${name} → assets/scripts/${name}`);
+    } else if (name.endsWith(".css") || name.endsWith(".scss")) {
+      misplaced.push(`${name} → assets/styles/${name}`);
+    }
+  }
+
+  return misplaced;
+}
+
+function migrateLooseFiles() {
+  fs.mkdirSync(path.resolve("assets/scripts"), { recursive: true });
+  fs.mkdirSync(path.resolve("assets/styles"), { recursive: true });
+
+  function moveFile(src, destDir, label) {
+    const name = path.basename(src);
+    const dest = path.resolve(destDir, name);
+    if (!fs.existsSync(dest)) {
+      fs.renameSync(src, dest);
+      console.log(YELLOW + `📁 Moved ${label}${name} → ${destDir}/${name}` + RESET);
+    }
+  }
+
+  if (fs.existsSync("assets")) {
+    for (const entry of fs.readdirSync("assets", { withFileTypes: true })) {
+      if (!entry.isFile()) continue;
+      const src = path.resolve("assets", entry.name);
+      const name = entry.name;
+      if (name.endsWith(".js")) {
+        moveFile(src, "assets/scripts", "assets/");
+      } else if (name.endsWith(".css") || name.endsWith(".scss")) {
+        moveFile(src, "assets/styles", "assets/");
+      }
+    }
+  }
+
+  for (const entry of fs.readdirSync(".", { withFileTypes: true })) {
+    if (!entry.isFile()) continue;
+    const name = entry.name;
+    if (name.startsWith(".") || CONFIG_RE.test(name)) continue;
+    const src = path.resolve(name);
+    if (name.endsWith(".js")) {
+      moveFile(src, "assets/scripts", "");
+    } else if (name.endsWith(".css") || name.endsWith(".scss")) {
+      moveFile(src, "assets/styles", "");
+    }
+  }
 }
 
 function patchWorkflow(workflowPath) {
@@ -689,21 +765,34 @@ async function upgradeDetect() {
   }
 
   const missing = detectMissing();
+  const misplaced = detectMisplaced();
 
-  if (missing.length === 0 && !renamed) {
+  if (missing.length === 0 && misplaced.length === 0 && !renamed) {
     console.log(
       GREEN + "✅ Nothing to upgrade — project is up to date." + RESET,
     );
     process.exit(0);
   }
 
-  console.log(YELLOW + "The following items will be added:" + RESET);
-  for (const item of missing) {
-    console.log("  • " + item);
+  if (missing.length > 0) {
+    console.log(YELLOW + "The following items will be added:" + RESET);
+    for (const item of missing) {
+      console.log("  • " + item);
+    }
+  }
+  if (misplaced.length > 0) {
+    console.log(YELLOW + "The following files will be moved:" + RESET);
+    for (const item of misplaced) {
+      console.log("  • " + item);
+    }
   }
 }
 
 async function upgradePatch() {
+  // Step 1: migrate all loose JS/CSS/SCSS files to the correct asset dirs
+  migrateLooseFiles();
+
+  // Step 2: migrate old assets/themes/ → assets/styles/themes/
   const themesDir = path.resolve("assets/styles/themes");
   fs.mkdirSync(themesDir, { recursive: true });
 
@@ -729,23 +818,15 @@ async function upgradePatch() {
     });
   }
 
-  fs.mkdirSync(path.resolve("assets/scripts"), { recursive: true });
-  copyTemplate(
-    "build-info.js",
-    path.resolve("assets/scripts/build-info.js"),
-    {},
-  );
+  // Step 3: add build-info only if not already present (may have been migrated in step 1)
+  if (!fs.existsSync(path.resolve("assets/scripts/build-info.js"))) {
+    copyTemplate("build-info.js", path.resolve("assets/scripts/build-info.js"), {});
+  }
 
-  for (const oldPath of ["build-info.js", "src/build-info.js"]) {
-    const full = path.resolve(oldPath);
-    if (fs.existsSync(full)) {
-      fs.rmSync(full);
-      console.log(
-        YELLOW +
-          `🗑️  Removed old ${oldPath} (moved to assets/scripts/)` +
-          RESET,
-      );
-    }
+  // Remove any stray build-info that wasn't caught by migrateLooseFiles (e.g. src/)
+  if (fs.existsSync(path.resolve("src/build-info.js"))) {
+    fs.rmSync(path.resolve("src/build-info.js"));
+    console.log(YELLOW + "🗑️  Removed old src/build-info.js (moved to assets/scripts/)" + RESET);
   }
 
   const workflowsDir = path.resolve(".github/workflows");
