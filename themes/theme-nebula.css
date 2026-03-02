@@ -1,5 +1,5 @@
 /* Nebula */
-:root {
+[data-theme="nebula"] {
   --color-primary: #2dd4bf;
   --color-secondary: #e879f9;
   --color-accent: #2dd4bf;

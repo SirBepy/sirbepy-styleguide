@@ -307,6 +307,7 @@
         el.textContent = css;
         document.head.appendChild(el);
       }
+      document.documentElement.setAttribute("data-theme", name);
       localStorage.setItem(LS_KEY, name);
       const prev = elThemeBtns.querySelector(".tl-theme-error");
       if (prev) prev.remove();
@@ -407,6 +408,7 @@
           el.textContent = css;
           document.head.appendChild(el);
         }
+        document.documentElement.setAttribute("data-theme", saved);
       })
       .catch(function () {});
   }

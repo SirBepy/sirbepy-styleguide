@@ -156,6 +156,7 @@ function injectIntoHtml(htmlPath, options = {}) {
 
   if (options.voidTheme) {
     html = html.replace(/<style id="active-theme">[\s\S]*?<\/style>/, "");
+    html = html.replace(/(<html\b[^>]*?)(\s*>)/, '$1 data-theme="void"$2');
     const voidCssPath = path.join(scriptDir, "themes", "theme-void.css");
     if (fs.existsSync(voidCssPath)) {
       const voidCss = fs.readFileSync(voidCssPath, "utf8");

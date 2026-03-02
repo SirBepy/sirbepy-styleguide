@@ -1,5 +1,5 @@
 /* Void */
-:root {
+[data-theme="void"] {
   --color-primary: #9d7dfc;
   --color-secondary: #6e8fff;
   --color-accent: #9d7dfc;

@@ -1,5 +1,5 @@
 /* Glacier */
-:root {
+[data-theme="glacier"] {
   --color-primary: #60a5fa;
   --color-secondary: #93c5fd;
   --color-accent: #38bdf8;

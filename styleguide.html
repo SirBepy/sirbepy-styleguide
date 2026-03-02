@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" data-theme="void">
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
@@ -7,189 +7,14 @@
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@300;400;500;600;700&family=Inter:wght@300;400;500;600;700&family=Fira+Code:wght@400;500&family=Bricolage+Grotesque:wght@300;400;500;600;700;800&family=Plus+Jakarta+Sans:wght@300;400;500;600;700&family=DM+Sans:wght@300;400;500;600&family=Geist+Mono:wght@400;500;600&family=Manrope:wght@300;400;500;600;700;800&family=Space+Grotesk:wght@300;400;500;600;700&family=Oxanium:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
+
+  <!-- Themes — add more theme-*.css files here as you create them -->
+  <link rel="stylesheet" href="themes/theme-void.css" />
+  <link rel="stylesheet" href="themes/theme-glacier.css" />
+  <link rel="stylesheet" href="themes/theme-cosmo.css" />
+  <link rel="stylesheet" href="themes/theme-nebula.css" />
+
   <style>
-    /* ============================================================
-       THEMES
-    ============================================================ */
-
-    /* --- THEME 1: Nebula (based on portfolio) --- */
-    [data-theme="nebula"] {
-      --color-primary: #ee75f4;
-      --color-secondary: #9487ff;
-      --color-accent: #ee75f4;
-      --color-background: #252e5c;
-      --color-surface: #354076;
-      --color-surface-alt: #3b467f;
-      --color-text: #f1f5f9;
-      --color-text-muted: #94a3b8;
-      --color-border: #334155;
-      --color-success: #10b981;
-      --color-info: #3b82f6;
-      --font-heading: 'Fredoka', system-ui, sans-serif;
-      --font-body: 'Inter', system-ui, sans-serif;
-      --font-mono: 'Fira Code', monospace;
-      --badge-tech-bg: #4b589c;
-      --radius-card: 12px;
-      --radius-badge: 9999px;
-      --shadow-card: 0 4px 6px -1px rgba(0,0,0,0.2);
-    }
-
-    /* --- THEME 2: Dusk — neutral/clean, soft lavender, medium dark --- */
-    [data-theme="dusk"] {
-      --color-primary: #b48eff;
-      --color-secondary: #7eb8ff;
-      --color-accent: #b48eff;
-      --color-background: #1c1b2e;
-      --color-surface: #252440;
-      --color-surface-alt: #2c2b4a;
-      --color-text: #ece9ff;
-      --color-text-muted: #8b87b8;
-      --color-border: #38365a;
-      --color-success: #7af0c0;
-      --color-info: #7eb8ff;
-      --font-heading: 'Manrope', system-ui, sans-serif;
-      --font-body: 'DM Sans', system-ui, sans-serif;
-      --font-mono: 'Fira Code', monospace;
-      --badge-tech-bg: #2e2c52;
-      --radius-card: 10px;
-      --radius-badge: 6px;
-      --shadow-card: 0 4px 16px rgba(0,0,0,0.25);
-    }
-
-    /* --- THEME 3: Prism — sharp/geometric, violet, medium dark --- */
-    [data-theme="prism"] {
-      --color-primary: #c084fc;
-      --color-secondary: #818cf8;
-      --color-accent: #c084fc;
-      --color-background: #18172a;
-      --color-surface: #211f38;
-      --color-surface-alt: #272545;
-      --color-text: #f0eeff;
-      --color-text-muted: #7b78a8;
-      --color-border: #33305a;
-      --color-success: #86efac;
-      --color-info: #818cf8;
-      --font-heading: 'Space Grotesk', system-ui, sans-serif;
-      --font-body: 'Space Grotesk', system-ui, sans-serif;
-      --font-mono: 'Fira Code', monospace;
-      --badge-tech-bg: #27244a;
-      --radius-card: 6px;
-      --radius-badge: 4px;
-      --shadow-card: 0 4px 20px rgba(0,0,0,0.3);
-    }
-
-    /* --- THEME 4: Cosmo — Fredoka-friendly, warm violet, medium dark --- */
-    [data-theme="cosmo"] {
-      --color-primary: #d8a4ff;
-      --color-secondary: #a5b4fc;
-      --color-accent: #d8a4ff;
-      --color-background: #201828;
-      --color-surface: #2c2038;
-      --color-surface-alt: #352744;
-      --color-text: #f5eeff;
-      --color-text-muted: #9b88bb;
-      --color-border: #412e58;
-      --color-success: #86efac;
-      --color-info: #a5b4fc;
-      --font-heading: 'Fredoka', system-ui, sans-serif;
-      --font-body: 'Plus Jakarta Sans', system-ui, sans-serif;
-      --font-mono: 'Fira Code', monospace;
-      --badge-tech-bg: #301e45;
-      --radius-card: 16px;
-      --radius-badge: 9999px;
-      --shadow-card: 0 4px 20px rgba(0,0,0,0.25);
-    }
-
-    /* --- THEME 5: Slate — cool grey-violet, barely tinted bg, periwinkle accent --- */
-    [data-theme="slate"] {
-      --color-primary: #a09efc;
-      --color-secondary: #7eb3ff;
-      --color-accent: #a09efc;
-      --color-background: #191921;
-      --color-surface: #21212e;
-      --color-surface-alt: #28283a;
-      --color-text: #e8e7f5;
-      --color-text-muted: #7a79a0;
-      --color-border: #313050;
-      --color-success: #7af0c0;
-      --color-info: #7eb3ff;
-      --font-heading: 'Manrope', system-ui, sans-serif;
-      --font-body: 'Manrope', system-ui, sans-serif;
-      --font-mono: 'Fira Code', monospace;
-      --badge-tech-bg: #252438;
-      --radius-card: 10px;
-      --radius-badge: 6px;
-      --shadow-card: 0 4px 16px rgba(0,0,0,0.3);
-    }
-
-    /* --- THEME 6: Haze — warmest of the set, dusty violet bg, soft lilac accent --- */
-    [data-theme="haze"] {
-      --color-primary: #c4a8ff;
-      --color-secondary: #9eb5ff;
-      --color-accent: #c4a8ff;
-      --color-background: #1e1a2a;
-      --color-surface: #272336;
-      --color-surface-alt: #2e2940;
-      --color-text: #ede8ff;
-      --color-text-muted: #887faa;
-      --color-border: #3a3354;
-      --color-success: #7af0c0;
-      --color-info: #9eb5ff;
-      --font-heading: 'Manrope', system-ui, sans-serif;
-      --font-body: 'DM Sans', system-ui, sans-serif;
-      --font-mono: 'Fira Code', monospace;
-      --badge-tech-bg: #2c2645;
-      --radius-card: 10px;
-      --radius-badge: 8px;
-      --shadow-card: 0 4px 16px rgba(0,0,0,0.25);
-    }
-
-    /* --- THEME 7: Void — most stripped back, near-neutral bg, electric violet pop --- */
-    [data-theme="void"] {
-      --color-primary: #9d7dfc;
-      --color-secondary: #6e8fff;
-      --color-accent: #9d7dfc;
-      --color-background: #16151f;
-      --color-surface: #1e1d2b;
-      --color-surface-alt: #242334;
-      --color-text: #e2e0f0;
-      --color-text-muted: #6b6990;
-      --color-border: #2d2c44;
-      --color-success: #7af0c0;
-      --color-info: #6e8fff;
-      --font-heading: 'Manrope', system-ui, sans-serif;
-      --font-body: 'DM Sans', system-ui, sans-serif;
-      --font-mono: 'Fira Code', monospace;
-      --badge-tech-bg: #22213a;
-      --radius-card: 10px;
-      --radius-badge: 6px;
-      --shadow-card: 0 4px 16px rgba(0,0,0,0.35);
-    }
-
-    /* --- THEME 3: Glacier --- */
-    [data-theme="glacier"] {
-      --color-primary: #5bf5d8;
-      --color-secondary: #5bcaf5;
-      --color-accent: #5bf5d8;
-      --color-background: #07101a;
-      --color-surface: #0d1f2e;
-      --color-surface-alt: #102433;
-      --color-text: #e0f2fe;
-      --color-text-muted: #5b8aa8;
-      --color-border: #1a3a4f;
-      --color-success: #5bf5d8;
-      --color-info: #5bcaf5;
-      --font-heading: 'Bricolage Grotesque', system-ui, sans-serif;
-      --font-body: 'Plus Jakarta Sans', system-ui, sans-serif;
-      --font-mono: 'Fira Code', monospace;
-      --badge-tech-bg: #0d2a3a;
-      --radius-card: 16px;
-      --radius-badge: 9999px;
-      --shadow-card: 0 4px 24px rgba(91,245,216,0.07);
-    }
-
-
-
     /* ============================================================
        BASE RESET
     ============================================================ */
@@ -840,7 +665,7 @@
     ::-webkit-scrollbar-thumb:hover { background: var(--color-primary); }
   </style>
 </head>
-<body data-theme="void">
+<body>
 
   <!-- THEME BAR -->
   <div class="theme-bar">
@@ -850,12 +675,8 @@
       <button class="theme-btn fav" data-theme="glacier">🧊 Glacier</button>
       <div class="theme-divider"></div>
       <span class="theme-bar-label">Others</span>
+      <button class="theme-btn" data-theme="cosmo">🌶️ Cosmo</button>
       <button class="theme-btn" data-theme="nebula">🌌 Nebula</button>
-      <button class="theme-btn" data-theme="dusk">🌃 Dusk</button>
-      <button class="theme-btn" data-theme="prism">🔷 Prism</button>
-      <button class="theme-btn" data-theme="cosmo">✨ Cosmo</button>
-      <button class="theme-btn" data-theme="slate">🩶 Slate</button>
-      <button class="theme-btn" data-theme="haze">🫧 Haze</button>
     </div>
   </div>
 
@@ -865,7 +686,7 @@
     <div class="page-hero">
       <div class="theme-name-display">
         <div class="theme-dot"></div>
-        <span id="theme-label">nebula</span>
+        <span id="theme-label">void</span>
       </div>
       <h1>Joe's Styleguide</h1>
       <p>A living reference for colors, typography, and reusable components. Switch themes above to preview different directions.</p>
@@ -1127,25 +948,13 @@
   </div><!-- /page -->
 
   <script>
-    const themes = {
-      void: '🕳️ Void',
-      glacier: '🧊 Glacier',
-      nebula: '🌌 Nebula',
-      dusk: '🌃 Dusk',
-      prism: '🔷 Prism',
-      cosmo: '✨ Cosmo',
-      slate: '🩶 Slate',
-      haze: '🫧 Haze'
-    };
-
-    const body = document.body;
-    const label = document.getElementById('theme-label');
     const buttons = document.querySelectorAll('.theme-btn');
+    const label = document.getElementById('theme-label');
 
     buttons.forEach(btn => {
       btn.addEventListener('click', () => {
         const theme = btn.dataset.theme;
-        body.setAttribute('data-theme', theme);
+        document.documentElement.setAttribute('data-theme', theme);
         label.textContent = theme;
         buttons.forEach(b => b.classList.remove('active'));
         btn.classList.add('active');
