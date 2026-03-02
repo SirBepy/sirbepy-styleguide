@@ -226,6 +226,10 @@ function detectMissing() {
     missing.push("assets/scripts/build-info.js");
   }
 
+  if (!fs.existsSync(path.resolve("package.json"))) {
+    missing.push("package.json");
+  }
+
   const workflowsDir = path.resolve(".github/workflows");
   if (
     !fs.existsSync(workflowsDir) ||
@@ -238,6 +242,7 @@ function detectMissing() {
 }
 
 const CONFIG_RE = /\.config\.(js|ts|mjs|cjs)$/;
+const SW_RE = /^(sw|service-?worker|firebase-messaging-sw)\.js$/i;
 
 function detectMisplaced() {
   const misplaced = [];
@@ -257,7 +262,7 @@ function detectMisplaced() {
   for (const entry of fs.readdirSync(".", { withFileTypes: true })) {
     if (!entry.isFile()) continue;
     const name = entry.name;
-    if (name.startsWith(".") || CONFIG_RE.test(name)) continue;
+    if (name.startsWith(".") || CONFIG_RE.test(name) || SW_RE.test(name)) continue;
     if (name.endsWith(".js")) {
       misplaced.push(`${name} → assets/scripts/${name}`);
     } else if (name.endsWith(".css") || name.endsWith(".scss")) {
@@ -297,7 +302,7 @@ function migrateLooseFiles() {
   for (const entry of fs.readdirSync(".", { withFileTypes: true })) {
     if (!entry.isFile()) continue;
     const name = entry.name;
-    if (name.startsWith(".") || CONFIG_RE.test(name)) continue;
+    if (name.startsWith(".") || CONFIG_RE.test(name) || SW_RE.test(name)) continue;
     const src = path.resolve(name);
     if (name.endsWith(".js")) {
       moveFile(src, "assets/scripts", "");
@@ -842,6 +847,15 @@ async function upgradePatch() {
     copyTemplate("deploy.yml", path.join(workflowsDir, "deploy.yml"), {});
   }
 
+  if (!fs.existsSync(path.resolve("package.json"))) {
+    const pkgName = path.basename(process.cwd()).toLowerCase().replace(/[^a-z0-9-]/g, "-");
+    fs.writeFileSync(
+      path.resolve("package.json"),
+      JSON.stringify({ name: pkgName, version: "1.0.0", scripts: { dev: "npx serve ." } }, null, 2) + "\n",
+    );
+    console.log(GREEN + "✅ Created package.json (run: npm run dev)" + RESET);
+  }
+
   // Merge .gitignore (additive — only add missing lines, never remove)
   mergeGitignore(path.resolve(".gitignore"));
   console.log(GREEN + "✅ .gitignore updated." + RESET);
@@ -852,12 +866,19 @@ function upgradeFinalize() {
   execSync('git commit -m "MAJOR: apply bepy-project-init upgrade"', {
     stdio: "inherit",
   });
+
+  let devCmd = "  Open index.html in a browser or use a local server";
+  try {
+    const pkg = JSON.parse(fs.readFileSync(path.resolve("package.json"), "utf8"));
+    if (pkg.scripts && pkg.scripts.dev) devCmd = "  npm run dev";
+  } catch (e) {}
+
   console.log(
     GREEN +
       "✅ Upgrade complete!\n" +
       "\n" +
       "Next steps:\n" +
-      "  npm run dev\n" +
+      devCmd + "\n" +
       "  Push to GitHub to trigger deployment" +
       RESET,
   );
