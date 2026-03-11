@@ -22,7 +22,7 @@ let setupPwa = false;
 let themeColor = "";
 let createdFiles = [];
 let preExistingFiles = new Set();
-let upgradeMode = false;
+let upgradeMode = null; // null = not yet determined
 let projectDescription = "";
 
 const rl = readline.createInterface({
@@ -415,19 +415,73 @@ function mergeGitignore(destPath) {
   }
 }
 
-async function modeSelect() {
-  const choice = await prompt(
-    "What do you want to do? (1) Create new project  (2) Upgrade existing project",
-    "",
-    (v) => {
+// ─── Arg parsing ──────────────────────────────────────────────────────────────
+
+async function resolveFromArgs() {
+  const args = process.argv.slice(2);
+  if (args.length === 0) return;
+
+  const [first, second] = args;
+
+  if (first === "update" || first === "upgrade") {
+    upgradeMode = true;
+    if (second === "react" || second === "vite") framework = second;
+    return;
+  }
+
+  if (first === "init" || first === "create") {
+    upgradeMode = false;
+    if (second === "react" || second === "vite") framework = second;
+    return;
+  }
+
+  if (first === "react" || first === "vite") {
+    upgradeMode = false;
+    framework = first;
+    return;
+  }
+
+  if (first === "update-react") {
+    upgradeMode = true;
+    framework = "react";
+    return;
+  }
+  if (first === "update-vite") {
+    upgradeMode = true;
+    framework = "vite";
+    return;
+  }
+
+  console.log(YELLOW + `⚠️  Unknown argument "${first}".` + RESET);
+  console.log(`Usage: init [init|update] [react|vite]`);
+}
+
+async function promptMissing() {
+  if (upgradeMode === null) {
+    const choice = await prompt(
+      "What do you want to do? (1) Initialize  (2) Update",
+      "",
+      (v) => {
+        if (v !== "1" && v !== "2") {
+          console.log(RED + "Invalid choice. Enter 1 or 2." + RESET);
+          return false;
+        }
+        return true;
+      },
+    );
+    upgradeMode = choice === "2";
+  }
+
+  if (framework === "") {
+    const choice = await prompt("Framework? (1) Vite  (2) React", "", (v) => {
       if (v !== "1" && v !== "2") {
         console.log(RED + "Invalid choice. Enter 1 or 2." + RESET);
         return false;
       }
       return true;
-    },
-  );
-  upgradeMode = choice === "2";
+    });
+    framework = choice === "1" ? "vite" : "react";
+  }
 }
 
 // ─── Step functions ────────────────────────────────────────────────────────────
@@ -466,17 +520,6 @@ async function stepProjectName() {
   projectDescription = await prompt("Project description? (optional)", "");
 }
 
-async function stepFramework() {
-  const choice = await prompt("Framework? (1) Vite  (2) React", "", (v) => {
-    if (v !== "1" && v !== "2") {
-      console.log(RED + "Invalid choice. Enter 1 or 2." + RESET);
-      return false;
-    }
-    return true;
-  });
-  framework = choice === "1" ? "vite" : "react";
-}
-
 function stepScaffold() {
   console.log(YELLOW + "⚙️  Scaffolding project..." + RESET);
 
@@ -505,12 +548,12 @@ function stepScaffold() {
       if (fs.existsSync(f)) fs.rmSync(f, { force: true });
     }
     fs.rmSync("style.css", { force: true });
+    fs.rmSync("main.js", { force: true });
 
+    // Our template already has fonts, void theme, widget, and build-info wired up
     copyTemplate("vite/index.html", path.resolve("index.html"), {
       PROJECT_NAME: projectName,
     });
-
-    fs.rmSync("main.js", { force: true });
 
     const assetsIconsExisted = fs.existsSync("assets/icons");
     fs.mkdirSync("assets/icons", { recursive: true });
@@ -525,16 +568,6 @@ function stepScaffold() {
     console.log(YELLOW + "🎨 Downloading themes..." + RESET);
     downloadThemes(path.resolve("assets/styles/themes"));
 
-    const styleScssIsNew = !fs.existsSync(
-      path.resolve("assets/styles/style.scss"),
-    );
-    assertSafeToOverwrite(path.resolve("assets/styles/style.scss"));
-    fs.writeFileSync(
-      path.resolve("assets/styles/style.scss"),
-      "/* Styles */\n",
-    );
-    if (styleScssIsNew) track(path.resolve("assets/styles/style.scss"));
-
     const assetsScriptsExisted = fs.existsSync("assets/scripts");
     fs.mkdirSync("assets/scripts", { recursive: true });
     if (!assetsScriptsExisted) track(path.resolve("assets/scripts"));
@@ -545,11 +578,6 @@ function stepScaffold() {
       path.resolve("assets/scripts/build-info.js"),
       {},
     );
-    injectIntoHtml(path.resolve("index.html"), {
-      googleFonts: true,
-      voidTheme: true,
-      widgetTag: true,
-    });
   } else {
     // React cleanup
     fs.rmSync("src/App.css", { force: true });
@@ -561,6 +589,12 @@ function stepScaffold() {
       PROJECT_NAME: projectName,
     });
     copyTemplate("react/main.jsx", path.resolve("src/main.jsx"), {});
+
+    // Use our own index.html — fonts, void theme, widget, and build-info all pre-wired
+    copyTemplate("react/index.html", path.resolve("index.html"), {
+      PROJECT_NAME: projectName,
+    });
+
     const srcComponentsExisted = fs.existsSync("src/components");
     fs.mkdirSync("src/components", { recursive: true });
     if (!srcComponentsExisted) track(path.resolve("src/components"));
@@ -578,17 +612,6 @@ function stepScaffold() {
     console.log(YELLOW + "🎨 Downloading themes..." + RESET);
     downloadThemes(path.resolve("assets/styles/themes"));
 
-    const indexScssIsNew = !fs.existsSync(
-      path.resolve("assets/styles/index.scss"),
-    );
-    assertSafeToOverwrite(path.resolve("assets/styles/index.scss"));
-    fs.writeFileSync(
-      path.resolve("assets/styles/index.scss"),
-      "/* Styles */\n",
-    );
-    if (indexScssIsNew) track(path.resolve("assets/styles/index.scss"));
-    copyTemplate("react/App.scss", path.resolve("assets/styles/App.scss"), {});
-
     const reactScriptsExisted = fs.existsSync("assets/scripts");
     fs.mkdirSync("assets/scripts", { recursive: true });
     if (!reactScriptsExisted) track(path.resolve("assets/scripts"));
@@ -598,12 +621,6 @@ function stepScaffold() {
       path.resolve("assets/scripts/build-info.js"),
       {},
     );
-    injectIntoHtml(path.resolve("index.html"), {
-      googleFonts: true,
-      voidTheme: true,
-      widgetTag: true,
-      buildInfoScript: true,
-    });
   }
 
   // Both frameworks
@@ -629,10 +646,7 @@ function stepScaffold() {
   console.log(GREEN + "✅ Project scaffolded." + RESET);
 }
 
-async function stepStyleguide() {
-  const answer = await prompt("Set up styleguide? [Y/n]", "y");
-  if (answer.toLowerCase() === "n") return;
-
+function stepStyleguide() {
   console.log(YELLOW + "🎨 Setting up styleguide..." + RESET);
 
   copyTemplate(
@@ -730,7 +744,6 @@ async function stepPwa() {
     THEME_COLOR: themeColor,
   });
 
-  // Inject PWA tags into index.html
   injectIntoHtml(path.resolve("index.html"), {
     pwaManifest: true,
     pwaThemeColor: themeColor,
@@ -781,8 +794,8 @@ function stepFinalize() {
       (setupPwa ? "yes" : "no") +
       "\n" +
       "\n" +
-      "Next steps:\n" +
-      "  npm run dev\n" +
+      "Next steps (manual):\n" +
+      "  Run when ready: npm run dev\n" +
       "  Add your GitHub remote: git remote add origin <url>" +
       RESET,
   );
@@ -947,12 +960,61 @@ async function upgradePatch() {
         2,
       ) + "\n",
     );
-    console.log(GREEN + "✅ Created package.json (run: npm run dev)" + RESET);
+    console.log(GREEN + "✅ Created package.json" + RESET);
   }
 
   // Merge .gitignore (additive — only add missing lines, never remove)
   mergeGitignore(path.resolve(".gitignore"));
   console.log(GREEN + "✅ .gitignore updated." + RESET);
+
+  // Step 4: ensure styleguide is set up
+  const styleguidePath = path.resolve("assets/styles/styleguide.scss");
+  if (!fs.existsSync(styleguidePath)) {
+    fs.mkdirSync(path.resolve("assets/styles"), { recursive: true });
+    copyTemplate("styleguide.scss", styleguidePath, {});
+    console.log(GREEN + "✅ Added styleguide.scss" + RESET);
+
+    if (framework === "vite") {
+      const stylePath = path.resolve("assets/styles/style.scss");
+      if (!fs.existsSync(stylePath)) {
+        copyTemplate("vite/style.scss", stylePath, {});
+      } else {
+        let content = fs.readFileSync(stylePath, "utf8");
+        if (
+          !content.includes("@use './styleguide'") &&
+          !content.includes('@use "./styleguide"')
+        ) {
+          fs.writeFileSync(stylePath, "@use './styleguide';\n" + content);
+          console.log(
+            YELLOW + "✏️  Added @use './styleguide' to style.scss" + RESET,
+          );
+        }
+      }
+    }
+
+    if (framework === "react") {
+      const indexScssPath = path.resolve("assets/styles/index.scss");
+      if (!fs.existsSync(indexScssPath)) {
+        copyTemplate("react/index.scss", indexScssPath, {});
+      } else {
+        let content = fs.readFileSync(indexScssPath, "utf8");
+        if (
+          !content.includes("@use './styleguide'") &&
+          !content.includes('@use "./styleguide"')
+        ) {
+          fs.writeFileSync(indexScssPath, "@use './styleguide';\n" + content);
+          console.log(
+            YELLOW + "✏️  Added @use './styleguide' to index.scss" + RESET,
+          );
+        }
+      }
+
+      const appScssPath = path.resolve("assets/styles/App.scss");
+      if (!fs.existsSync(appScssPath)) {
+        copyTemplate("react/App.scss", appScssPath, {});
+      }
+    }
+  }
 }
 
 function upgradeFinalize() {
@@ -966,7 +1028,8 @@ function upgradeFinalize() {
     const pkg = JSON.parse(
       fs.readFileSync(path.resolve("package.json"), "utf8"),
     );
-    if (pkg.scripts && pkg.scripts.dev) devCmd = "  npm run dev";
+    if (pkg.scripts && pkg.scripts.dev)
+      devCmd = "  Run when ready: npm run dev";
   } catch (e) {}
 
   console.log(
@@ -992,7 +1055,9 @@ async function main() {
     if (pkg.version) version = " v" + pkg.version;
   } catch (e) {}
   console.log(GREEN + "🚀 Web Project Initializer" + version + RESET);
-  await modeSelect();
+
+  await resolveFromArgs();
+  await promptMissing();
 
   if (upgradeMode) {
     try {
@@ -1013,13 +1078,12 @@ async function main() {
     return;
   }
 
-  // Create path (unchanged)
+  // Init path
   await preflight();
   await stepProjectName();
   snapshotPreExisting();
-  await stepFramework();
   stepScaffold();
-  await stepStyleguide();
+  stepStyleguide();
   await stepPwa();
   stepFinalize();
 }
