@@ -288,6 +288,14 @@ function detectMissing() {
     missing.push(".github/workflows/*.yml");
   }
 
+  if (!fs.existsSync(path.resolve(".eslintrc.js"))) {
+    missing.push(".eslintrc.js");
+  }
+
+  if (!fs.existsSync(path.resolve(".prettierrc"))) {
+    missing.push(".prettierrc");
+  }
+
   return missing;
 }
 
@@ -644,6 +652,10 @@ function stepScaffold() {
   console.log(YELLOW + "📦 Installing dependencies..." + RESET);
   execSync("npm install", { stdio: "inherit" });
   execSync("npm install -D sass", { stdio: "inherit" });
+  execSync(
+    "npm install -D eslint @typescript-eslint/eslint-plugin @typescript-eslint/parser eslint-config-prettier prettier",
+    { stdio: "inherit" },
+  );
 
   if (framework === "vite") {
     // Vite vanilla cleanup
@@ -691,6 +703,10 @@ function stepScaffold() {
     );
   } else {
     // React cleanup
+    execSync(
+      "npm install -D eslint-plugin-react eslint-plugin-react-hooks",
+      { stdio: "inherit" },
+    );
     fs.rmSync("src/App.css", { force: true });
     fs.rmSync("src/assets/react.svg", { force: true });
     fs.rmSync("public/vite.svg", { force: true });
@@ -752,6 +768,13 @@ function stepScaffold() {
     path.resolve(".github/workflows/deploy.yml"),
     {},
   );
+
+  copyTemplate(
+    framework === "vite" ? "vite/.eslintrc.js" : "react/.eslintrc.js",
+    path.resolve(".eslintrc.js"),
+    {},
+  );
+  copyTemplate(".prettierrc", path.resolve(".prettierrc"), {});
 
   try {
     const pkgPath = path.resolve("package.json");
@@ -1141,6 +1164,20 @@ async function upgradePatch() {
   // Merge .gitignore (additive — only add missing lines, never remove)
   mergeGitignore(path.resolve(".gitignore"));
   console.log(GREEN + "✅ .gitignore updated." + RESET);
+
+  if (!fs.existsSync(path.resolve(".eslintrc.js"))) {
+    copyTemplate(
+      framework === "vite" ? "vite/.eslintrc.js" : "react/.eslintrc.js",
+      path.resolve(".eslintrc.js"),
+      {},
+    );
+    console.log(GREEN + "✅ Added .eslintrc.js" + RESET);
+  }
+
+  if (!fs.existsSync(path.resolve(".prettierrc"))) {
+    copyTemplate(".prettierrc", path.resolve(".prettierrc"), {});
+    console.log(GREEN + "✅ Added .prettierrc" + RESET);
+  }
 
   // Step 4: ensure styleguide is set up
   const styleguidePath = path.resolve("assets/styles/styleguide.scss");
