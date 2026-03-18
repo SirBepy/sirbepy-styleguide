@@ -618,7 +618,7 @@ function stepScaffoldNonWeb() {
   console.log(YELLOW + "🔧 Initializing git..." + RESET);
   execSync("git init", { stdio: "inherit" });
   execSync("git add .", { stdio: "inherit" });
-  execSync('git commit -m "chore: initial project setup"', { stdio: "inherit" });
+  execSync('git commit -m "CHORE: initial project setup"', { stdio: "inherit" });
 
   console.log(GREEN + "✅ Project set up." + RESET);
 }
@@ -895,7 +895,7 @@ function stepFinalize() {
   execSync("git init", { stdio: "inherit" });
   mergeGitignore(path.resolve(".gitignore"));
   execSync("git add .", { stdio: "inherit" });
-  execSync('git commit -m "chore: initial project setup"', {
+  execSync('git commit -m "CHORE: initial project setup"', {
     stdio: "inherit",
   });
 
@@ -998,7 +998,7 @@ async function upgradeHandleDirtyTree() {
       process.exit(0);
     }
     execSync("git add .", { stdio: "inherit" });
-    execSync('git commit -m "Clean repo before doing bepy-project-init"', {
+    execSync('git commit -m "CHORE: stash uncommitted changes before upgrade"', {
       stdio: "inherit",
     });
   }
@@ -1225,7 +1225,7 @@ async function upgradePatch() {
 
 function upgradeFinalize() {
   execSync("git add .", { stdio: "inherit" });
-  execSync('git commit -m "chore: apply bepy-project-init upgrade"', {
+  execSync('git commit -m "CHORE: apply bepy-project-init upgrade"', {
     stdio: "inherit",
   });
 
