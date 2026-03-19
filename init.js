@@ -4,7 +4,7 @@
 const fs = require("fs");
 const path = require("path");
 const { execSync, execFileSync } = require("child_process");
-const readline = require("readline");
+const inquirer = require("inquirer");
 const os = require("os");
 
 // ─── Color constants ───────────────────────────────────────────────────────────
@@ -25,33 +25,33 @@ let preExistingFiles = new Set();
 let upgradeMode = null; // null = not yet determined
 let projectDescription = "";
 
-const rl = readline.createInterface({
-  input: process.stdin,
-  output: process.stdout,
-});
-
 // ─── Utility functions ─────────────────────────────────────────────────────────
 
 function prompt(label, defaultVal, validator) {
-  return new Promise((resolve) => {
-    function ask() {
-      const display =
-        YELLOW +
-        label +
-        (defaultVal ? " [" + defaultVal + "]" : "") +
-        ": " +
-        RESET;
-      rl.question(display, (answer) => {
-        const value = answer.trim() === "" ? defaultVal : answer.trim();
-        if (validator && !validator(value)) {
-          ask();
-        } else {
-          resolve(value);
-        }
-      });
-    }
-    ask();
+  return inquirer.prompt([{
+    type: "input",
+    name: "value",
+    message: label,
+    default: (defaultVal !== undefined && defaultVal !== "") ? defaultVal : undefined,
+    validate: validator ? (input) => {
+      const val = (input === "" || input === undefined) ? (defaultVal || "") : input;
+      const result = validator(val);
+      return result === true ? true : (typeof result === "string" ? result : " ");
+    } : undefined,
+  }]).then(a => {
+    const val = a.value;
+    if (val === undefined || val === null || val === "") return defaultVal || "";
+    return val;
   });
+}
+
+function select(message, choices) {
+  return inquirer.prompt([{
+    type: "list",
+    name: "value",
+    message,
+    choices,
+  }]).then(a => a.value);
 }
 
 function track(p) {
@@ -496,7 +496,7 @@ async function resolveFromArgs() {
   const [first, second] = args;
 
   const webFrameworks = ["react", "vite"];
-  const allFrameworks = ["react", "vite", "roblox", "general"];
+  const allFrameworks = ["react", "vite", "roblox", "general", "html"];
 
   if (first === "update" || first === "upgrade") {
     upgradeMode = true;
@@ -533,33 +533,18 @@ async function resolveFromArgs() {
 
 async function promptMissing() {
   if (upgradeMode === null) {
-    const choice = await prompt(
-      "What do you want to do? (1) Initialize  (2) Update",
-      "",
-      (v) => {
-        if (v !== "1" && v !== "2") {
-          console.log(RED + "Invalid choice. Enter 1 or 2." + RESET);
-          return false;
-        }
-        return true;
-      },
-    );
-    upgradeMode = choice === "2";
+    const choice = await select("What do you want to do?", [
+      { name: "Initialize", value: "init" },
+      { name: "Update", value: "update" },
+    ]);
+    upgradeMode = choice === "update";
   }
 
   if (upgradeMode === true && framework === "") {
-    const choice = await prompt(
-      "Framework? (1) Vite  (2) React",
-      "",
-      (v) => {
-        if (v !== "1" && v !== "2") {
-          console.log(RED + "Invalid choice. Enter 1 or 2." + RESET);
-          return false;
-        }
-        return true;
-      },
-    );
-    framework = choice === "1" ? "vite" : "react";
+    framework = await select("Framework?", [
+      { name: "Vite", value: "vite" },
+      { name: "React", value: "react" },
+    ]);
   }
 }
 
@@ -603,25 +588,30 @@ function isWebFramework(fw) {
   return fw === "vite" || fw === "react";
 }
 
+function detectRoblox() {
+  const markers = ["default.project.json", ".robloxignore"];
+  for (const m of markers) {
+    if (fs.existsSync(path.resolve(m))) return true;
+  }
+  return fs.readdirSync(".").some(f => /\.(rbxlx|rbxl|rbxm|rbxmx)$/.test(f));
+}
+
 async function stepFramework() {
-  if (framework === "vite" || framework === "react" || framework === "roblox" || framework === "general") {
+  if (["vite", "react", "roblox", "general", "html"].includes(framework)) return;
+
+  if (detectRoblox()) {
+    framework = "roblox";
+    console.log(GREEN + "🎮 Roblox project detected." + RESET);
     return;
   }
-  const choice = await prompt(
-    "Framework? (1) Vite  (2) React  (3) Roblox  (4) General",
-    "",
-    (v) => {
-      if (v !== "1" && v !== "2" && v !== "3" && v !== "4") {
-        console.log(RED + "Invalid choice. Enter 1, 2, 3, or 4." + RESET);
-        return false;
-      }
-      return true;
-    },
-  );
-  if (choice === "1") framework = "vite";
-  else if (choice === "2") framework = "react";
-  else if (choice === "3") framework = "roblox";
-  else framework = "general";
+
+  framework = await select("Framework?", [
+    { name: "HTML / CSS / JS  (plain static)", value: "html" },
+    { name: "Vite              (vanilla JS + bundler)", value: "vite" },
+    { name: "React             (React + Vite)", value: "react" },
+    { name: "Roblox", value: "roblox" },
+    { name: "General           (any other project)", value: "general" },
+  ]);
 }
 
 function stepScaffoldNonWeb() {
@@ -1362,7 +1352,6 @@ async function main() {
       upgradeFinalize();
       await stepAiSetup();
     } catch (err) {
-      rl.close();
       console.error(RED + "❌ Error during upgrade: " + err.message + RESET);
       console.log(
         YELLOW +
@@ -1384,6 +1373,8 @@ async function main() {
     await stepStyleguide();
     await stepPwa();
     stepFinalize();
+  } else if (framework === "html") {
+    console.log(YELLOW + "⚠️  HTML/CSS/JS workflow coming soon." + RESET);
   } else {
     stepScaffoldNonWeb();
   }
@@ -1391,9 +1382,8 @@ async function main() {
 }
 
 main()
-  .then(() => rl.close())
+  .then(() => process.exit(0))
   .catch((err) => {
-    rl.close();
     console.error(RED + "❌ Error: " + err.message + RESET);
     cleanup();
     process.exit(1);
