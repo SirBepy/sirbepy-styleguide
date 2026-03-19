@@ -532,26 +532,31 @@ async function resolveFromArgs() {
 }
 
 async function promptMissing() {
-  if (upgradeMode === null) {
-    const entries = fs.readdirSync(".");
-    const isEmpty = entries.every(e => e === ".git");
-    if (isEmpty) {
-      upgradeMode = false;
-      console.log(GREEN + "📁 Empty folder — starting initialization." + RESET);
-    } else {
-      const mode = await select("What do you want to do?", [
-        { name: "Update", value: "update" },
-        { name: "Initialize", value: "init" },
-      ]);
-      upgradeMode = mode === "update";
+  const files = fs.readdirSync(".");
+
+  // Detect framework from project files if not already set by args
+  if (framework === "") {
+    const hasViteConfig = files.some(f => /^vite\.config\.[jt]s$/.test(f));
+    if (hasViteConfig) {
+      const hasTsx = fs.existsSync("src") &&
+        fs.readdirSync("src").some(f => f.endsWith(".tsx") || f.endsWith(".jsx"));
+      framework = hasTsx ? "react" : "vite";
+    } else if (files.some(f => f.endsWith(".html"))) {
+      framework = "html";
     }
   }
 
-  if (upgradeMode === true && framework === "") {
-    framework = await select("Framework?", [
-      { name: "Vite", value: "vite" },
-      { name: "React", value: "react" },
-    ]);
+  // Determine mode if not set by args
+  if (upgradeMode === null) {
+    if (framework === "vite" || framework === "react") {
+      upgradeMode = true;
+      console.log(GREEN + `🔍 Detected ${framework} project — running update.` + RESET);
+    } else {
+      upgradeMode = false;
+      if (framework === "html") {
+        console.log(GREEN + "🔍 Detected HTML project." + RESET);
+      }
+    }
   }
 }
 
@@ -1516,12 +1521,12 @@ async function main() {
     return;
   }
 
-  // Init path
-  await preflight();
+  // Init / setup path
   await stepProjectName();
   snapshotPreExisting();
   await stepFramework();
   if (isWebFramework(framework)) {
+    await preflight(); // safety check before running npm create vite
     stepScaffold();
     await stepStyleguide();
     await stepPwa();
