@@ -533,11 +533,18 @@ async function resolveFromArgs() {
 
 async function promptMissing() {
   if (upgradeMode === null) {
-    const choice = await select("What do you want to do?", [
-      { name: "Initialize", value: "init" },
-      { name: "Update", value: "update" },
-    ]);
-    upgradeMode = choice === "update";
+    const entries = fs.readdirSync(".");
+    const isEmpty = entries.every(e => e === ".git");
+    if (isEmpty) {
+      upgradeMode = false;
+      console.log(GREEN + "📁 Empty folder — starting initialization." + RESET);
+    } else {
+      const mode = await select("What do you want to do?", [
+        { name: "Update", value: "update" },
+        { name: "Initialize", value: "init" },
+      ]);
+      upgradeMode = mode === "update";
+    }
   }
 
   if (upgradeMode === true && framework === "") {
@@ -605,13 +612,35 @@ async function stepFramework() {
     return;
   }
 
-  framework = await select("Framework?", [
-    { name: "HTML / CSS / JS  (plain static)", value: "html" },
-    { name: "Vite              (vanilla JS + bundler)", value: "vite" },
-    { name: "React             (React + Vite)", value: "react" },
-    { name: "Roblox", value: "roblox" },
-    { name: "General           (any other project)", value: "general" },
+  const projectType = await select("What kind of project?", [
+    { name: "Web", value: "web" },
+    { name: "Game", value: "game" },
+    { name: "Other", value: "other" },
   ]);
+
+  if (projectType === "game") {
+    framework = "roblox";
+    return;
+  }
+
+  if (projectType === "other") {
+    console.log(YELLOW + "⚠️  Other projects not yet supported." + RESET);
+    process.exit(0);
+  }
+
+  // Web sub-menu — order Simple Web based on whether .json or .scss exist
+  const hasJsonOrScss = fs.readdirSync(".").some(f => f.endsWith(".json") || f.endsWith(".scss"));
+  const webChoices = [
+    { name: "Simple Web  (HTML / CSS / JS)", value: "html" },
+    { name: "Vite        (vanilla JS + bundler)", value: "vite" },
+    { name: "React       (React + Vite)", value: "react" },
+  ];
+  if (hasJsonOrScss) {
+    const simpleWeb = webChoices.shift();
+    webChoices.push(simpleWeb);
+  }
+
+  framework = await select("What kind of web project?", webChoices);
 }
 
 function stepScaffoldNonWeb() {
@@ -1327,6 +1356,130 @@ function upgradeFinalize() {
   );
 }
 
+// ─── HTML / CSS / JS workflow ──────────────────────────────────────────────────
+
+async function stepScaffoldHtml() {
+  console.log(YELLOW + "⚙️  Setting up HTML project..." + RESET);
+
+  fs.mkdirSync("src", { recursive: true });
+  track(path.resolve("src"));
+
+  if (fs.existsSync("index.html")) {
+    let html = fs.readFileSync("index.html", "utf8");
+
+    // Extract inline <style>
+    const styleMatch = html.match(/<style[^>]*>([\s\S]*?)<\/style>/i);
+    if (styleMatch) {
+      fs.writeFileSync("src/styles.css", styleMatch[1].trim() + "\n");
+      track(path.resolve("src/styles.css"));
+      html = html.replace(/<style[^>]*>[\s\S]*?<\/style>/i, "");
+      html = html.replace("</head>", '  <link rel="stylesheet" href="src/styles.css">\n</head>');
+      console.log(GREEN + "✅ Extracted inline styles → src/styles.css" + RESET);
+    } else if (!fs.existsSync("src/styles.css")) {
+      fs.writeFileSync("src/styles.css", "/* styles */\n");
+      track(path.resolve("src/styles.css"));
+      html = html.replace("</head>", '  <link rel="stylesheet" href="src/styles.css">\n</head>');
+    }
+
+    // Extract inline <script> (no src= attribute)
+    const scriptMatch = html.match(/<script(?![^>]*\bsrc=)[^>]*>([\s\S]*?)<\/script>/i);
+    if (scriptMatch) {
+      fs.writeFileSync("src/script.js", scriptMatch[1].trim() + "\n");
+      track(path.resolve("src/script.js"));
+      html = html.replace(/<script(?![^>]*\bsrc=)[^>]*>[\s\S]*?<\/script>/i, "");
+      html = html.replace("</body>", '  <script src="src/script.js"></script>\n</body>');
+      console.log(GREEN + "✅ Extracted inline scripts → src/script.js" + RESET);
+    } else if (!fs.existsSync("src/script.js")) {
+      fs.writeFileSync("src/script.js", "// scripts\n");
+      track(path.resolve("src/script.js"));
+      html = html.replace("</body>", '  <script src="src/script.js"></script>\n</body>');
+    }
+
+    fs.writeFileSync("index.html", html);
+  } else {
+    const html = `<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>${projectName}</title>
+  <link rel="stylesheet" href="src/styles.css">
+</head>
+<body>
+
+  <script src="src/script.js"></script>
+</body>
+</html>
+`;
+    fs.writeFileSync("index.html", html);
+    track(path.resolve("index.html"));
+    fs.writeFileSync("src/styles.css", "/* styles */\n");
+    fs.writeFileSync("src/script.js", "// scripts\n");
+    track(path.resolve("src/styles.css"));
+    track(path.resolve("src/script.js"));
+  }
+
+  // Copy themes to src/themes/
+  const themesDir = path.join(scriptDir, "themes");
+  if (fs.existsSync(themesDir)) {
+    const destThemesDir = path.resolve("src/themes");
+    fs.mkdirSync(destThemesDir, { recursive: true });
+    track(destThemesDir);
+    for (const f of fs.readdirSync(themesDir)) {
+      fs.copyFileSync(path.join(themesDir, f), path.join(destThemesDir, f));
+    }
+    console.log(GREEN + "✅ Themes copied → src/themes/" + RESET);
+  }
+
+  // GitHub Pages deploy workflow
+  const workflowDir = path.resolve(".github/workflows");
+  fs.mkdirSync(workflowDir, { recursive: true });
+  track(path.resolve(".github"));
+  copyTemplate("html/deploy.yml", path.join(workflowDir, "deploy.yml"), {});
+
+  // .gitignore and .prettierrc
+  copyTemplate("html/gitignore", path.resolve(".gitignore"), {});
+  copyTemplate(".prettierrc", path.resolve(".prettierrc"), {});
+
+  if (!fs.existsSync(".git")) {
+    console.log(YELLOW + "🔧 Initializing git..." + RESET);
+    execSync("git init", { stdio: "inherit" });
+  }
+
+  console.log(GREEN + "✅ HTML project structure ready." + RESET);
+}
+
+async function stepHtmlAiSetup() {
+  const templatePath = path.join(scriptDir, "prompts", "HTML_SETUP_PROMPT.md");
+  const svgToPngPath = path.join(scriptDir, "svg-to-png.js");
+
+  const answer = await prompt("Run AI setup now? (y/n)", "n");
+  if (answer.toLowerCase() !== "y") {
+    console.log(YELLOW + `💡 Run it later: claude < "${templatePath}"` + RESET);
+    return;
+  }
+
+  // Write a resolved version of the prompt with the svg-to-png path substituted in
+  const promptContent = fs.readFileSync(templatePath, "utf8")
+    .replaceAll("{{SVG_TO_PNG_PATH}}", svgToPngPath);
+  const tempPromptPath = path.join(os.tmpdir(), "bepy-html-setup.md");
+  fs.writeFileSync(tempPromptPath, promptContent);
+
+  console.log(YELLOW + "🤖 Running AI setup via Claude CLI..." + RESET);
+  try {
+    execSync(`claude < "${tempPromptPath}"`, { stdio: "inherit" });
+    const committed = commitIfDirty("CHORE: AI project setup");
+    if (!committed) {
+      console.log(YELLOW + "⚠️  AI setup ran but nothing to commit." + RESET);
+    }
+    console.log(GREEN + "✅ AI setup complete." + RESET);
+  } catch (e) {
+    console.log(YELLOW + "⚠️  AI setup failed: " + e.message + ". Continuing." + RESET);
+  } finally {
+    fs.rmSync(tempPromptPath, { force: true });
+  }
+}
+
 // ─── Main entry point ──────────────────────────────────────────────────────────
 
 async function main() {
@@ -1337,7 +1490,7 @@ async function main() {
     );
     if (pkg.version) version = " v" + pkg.version;
   } catch (e) {}
-  console.log(GREEN + "🚀 Web Project Initializer" + version + RESET);
+  console.log(GREEN + "🚀 SirBepy's Project Initializer" + version + RESET);
 
   await resolveFromArgs();
   await promptMissing();
@@ -1373,12 +1526,14 @@ async function main() {
     await stepStyleguide();
     await stepPwa();
     stepFinalize();
+    await stepAiSetup();
   } else if (framework === "html") {
-    console.log(YELLOW + "⚠️  HTML/CSS/JS workflow coming soon." + RESET);
+    await stepScaffoldHtml();
+    await stepHtmlAiSetup();
   } else {
     stepScaffoldNonWeb();
+    await stepAiSetup();
   }
-  await stepAiSetup();
 }
 
 main()
