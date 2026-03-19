@@ -10,7 +10,8 @@
     "svg-to-png.js",
     "themes/",
     "widget/",
-    "templates/"
+    "templates/",
+    "prompts/"
   ],
   "engines": {
     "node": ">=18"
