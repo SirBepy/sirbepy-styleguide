@@ -6,9 +6,10 @@ The project has:
 - `index.html`
 - `src/styles.css`
 - `src/script.js`
-- `assets/styles/themes/` — theme CSS files (theme-void.css, theme-cosmo.css, theme-glacier.css, theme-nebula.css)
 - `.github/workflows/deploy.yml` — deploys to GitHub Pages on push to main
 - `.prettierrc` and `.gitignore`
+
+Themes are served from CDN at runtime. The settings widget (also CDN) injects a `<style>` tag that sets CSS custom properties like `--color-background`, `--color-surface`, `--color-text`, `--color-text-muted`, `--color-primary`, `--color-secondary`, `--color-border`, `--font-heading`, `--font-body`, `--font-mono`, `--radius-card`, `--radius-badge`, `--shadow-card`.
 
 The SVG-to-PNG converter is at: `{{SVG_TO_PNG_PATH}}`
 Usage: `node "{{SVG_TO_PNG_PATH}}" <input.svg> <output.png> <size>`
@@ -80,7 +81,26 @@ If something is already fixed/absolute in the top-right, insert this line BEFORE
 
 ---
 
-## Step 5 — Portfolio data
+## Step 5 — Theme the page
+
+**This step is required. Do not skip it.**
+
+Open `src/styles.css`. Rewrite it so the page uses the CSS custom properties injected by the settings widget. Rules:
+
+1. Replace any hardcoded background colors with `var(--color-background)`
+2. Replace any hardcoded surface/card colors with `var(--color-surface)` or `var(--color-surface-alt)`
+3. Replace any hardcoded text colors with `var(--color-text)` or `var(--color-text-muted)`
+4. Replace any hardcoded border colors with `var(--color-border)`
+5. Replace any hardcoded accent/highlight colors with `var(--color-primary)` or `var(--color-secondary)`
+6. Replace any hardcoded `font-family` declarations with `var(--font-body)` or `var(--font-heading)` as appropriate
+7. Add `body { background: var(--color-background); color: var(--color-text); font-family: var(--font-body); }` if not already present
+8. Keep all layout, spacing, sizing, and structural rules exactly as they are — only replace color and font values
+
+If the project has no styles yet (file is empty or just a comment), write a clean base that uses the variables for background, text, and fonts.
+
+---
+
+## Step 6 — Portfolio data
 
 Generate portfolio data for this project. Create two files:
 

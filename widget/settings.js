@@ -64,6 +64,9 @@
         display: flex; justify-content: space-between; align-items: center;
         margin-bottom: 1rem;
       }
+      .tl-panel-header span {
+        color: var(--color-text, #e2e0f0); font-size: 0.95rem; font-weight: 600;
+      }
       .tl-close-btn {
         background: transparent; border: none; cursor: pointer;
         border-radius: 50%; width: 32px; height: 32px;
