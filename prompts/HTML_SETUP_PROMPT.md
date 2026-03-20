@@ -81,7 +81,22 @@ If something is already fixed/absolute in the top-right, insert this line BEFORE
 
 ---
 
-## Step 5 — Theme the page
+## Step 5 — Animated background
+
+**This step is required. Do not skip it.**
+
+Add these lines to `index.html` just before `</body>`, after the settings widget script:
+
+```html
+<!-- Animated background. To disable: set window.BEPY_BACKGROUND = false before this tag. To use a custom SVG: set window.BEPY_BG_PATTERN = 'your-pattern.svg' before this tag. -->
+<script src="https://cdn.jsdelivr.net/gh/sirbepy/bepy-project-init@main/widget/background.js"></script>
+```
+
+Do not add this if a `background.js` script tag already exists.
+
+---
+
+## Step 6 — Theme the page
 
 **This step is required. Do not skip it.**
 
@@ -93,14 +108,15 @@ Open `src/styles.css`. Rewrite it so the page uses the CSS custom properties inj
 4. Replace any hardcoded border colors with `var(--color-border)`
 5. Replace any hardcoded accent/highlight colors with `var(--color-primary)` or `var(--color-secondary)`
 6. Replace any hardcoded `font-family` declarations with `var(--font-body)` or `var(--font-heading)` as appropriate
-7. Add `body { color: var(--color-text); font-family: var(--font-body); }` if not already present (omit `background` here if the page already has a custom background rule)
-8. Keep all layout, spacing, sizing, and structural rules exactly as they are — only replace color and font values
+7. Add `body { color: var(--color-text); font-family: var(--font-body); }` if not already present. Do NOT add a `background` property to `body` or `html` — the animated background script handles it.
+8. Remove any existing `background` or `background-color` rules from `body`, `html`, or any full-page wrapper element — the background script is the single source of truth for the page background.
+9. Keep all layout, spacing, sizing, and structural rules exactly as they are — only replace color and font values
 
 If the project has no styles yet (file is empty or just a comment), write a clean base that uses the variables for background, text, and fonts.
 
 ---
 
-## Step 6 — Portfolio data
+## Step 7 — Portfolio data
 
 Generate portfolio data for this project. Create two files:
 
