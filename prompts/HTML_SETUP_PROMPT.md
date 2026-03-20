@@ -76,20 +76,19 @@ If a theme link is already present, leave it alone.
 
 ## Step 5 — Settings widget
 
-Copy the file at `{{WIDGET_SRC}}` to `src/settings.js` in the current project.
+**This step is required. Do not skip it.**
 
-Then open `index.html` and look at the existing layout:
-- If there is already exactly one element positioned in the **top-right corner** (fixed or absolute), add the widget to the **top-left** instead
-- Otherwise, add it to the **top-right** (the widget defaults to top-right)
-
-Add this near the bottom of `<body>`, just before `</body>`, with a comment so it's easy to disable:
+1. Copy the file at `{{WIDGET_SRC}}` to `src/settings.js`
+2. Read `index.html` and check if there is already an element with `position: fixed` or `position: absolute` in the top-right corner
+3. Add the following lines to `index.html` just before `</body>`. This is mandatory:
 
 ```html
-<!-- Settings widget — comment out to disable -->
+<!-- Settings widget - comment out to disable -->
 <script src="src/settings.js"></script>
 ```
 
-If the widget needs to go to a non-default corner, also add this before the script tag:
+If something is already fixed/absolute in the top-right, insert this line BEFORE the script tag to move the widget:
+
 ```html
 <script>window.__SETTINGS_CORNER = 'top-left';</script>
 ```

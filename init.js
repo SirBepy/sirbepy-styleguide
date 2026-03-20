@@ -1481,6 +1481,7 @@ async function stepHtmlAiSetup() {
   console.log(YELLOW + "🤖 Running AI setup..." + RESET);
   try {
     execSync(`powershell -ExecutionPolicy Bypass -File "${scriptPath}"`, { stdio: "inherit" });
+    fs.rmSync(setupPromptPath, { force: true }); // remove before committing so it isn't included
     const committed = commitIfDirty("CHORE: AI project setup");
     if (!committed) console.log(YELLOW + "⚠️  Nothing to commit after AI setup." + RESET);
     console.log(GREEN + "✅ AI setup complete." + RESET);
