@@ -27,8 +27,8 @@
       height: 100%;
       background: radial-gradient(
         ellipse at 50% 60%,
-        var(--color-primary, #9d7dfc) 0%,
-        var(--color-background, #16151f) 65%
+        color-mix(in srgb, var(--color-primary, #9d7dfc) 70%, white) 0%,
+        color-mix(in srgb, var(--color-primary, #9d7dfc) 30%, black) 100%
       );
     }
 
@@ -53,7 +53,7 @@
       background: radial-gradient(
         circle,
         transparent 55%,
-        var(--color-background, #16151f) 100%
+        color-mix(in srgb, var(--color-primary, #9d7dfc) 20%, black) 100%
       );
     }
   `;
