@@ -7,6 +7,7 @@
   },
   "files": [
     "init.js",
+    "src/",
     "svg-to-png.js",
     "themes/",
     "widget/",
