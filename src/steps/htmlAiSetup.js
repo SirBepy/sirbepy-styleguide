@@ -2,8 +2,7 @@
 
 const fs = require("fs");
 const path = require("path");
-const os = require("os");
-const { execSync } = require("child_process");
+const { spawnSync } = require("child_process");
 const state = require("../state");
 const { prompt } = require("../shared/prompt");
 const { commitIfDirty } = require("../shared/git");
@@ -19,31 +18,21 @@ async function stepHtmlAiSetup() {
     return;
   }
 
-  const setupPromptPath = path.resolve(".bepy-setup.md");
-  const scriptPath = path.join(os.tmpdir(), "bepy-setup.ps1");
-
   const promptContent = fs.readFileSync(templatePath, "utf8")
     .replaceAll("{{SVG_TO_PNG_PATH}}", svgToPngPath);
-  fs.writeFileSync(setupPromptPath, promptContent);
-
-  const promptPathEscaped = setupPromptPath.replace(/'/g, "''");
-  fs.writeFileSync(scriptPath,
-    `$prompt = Get-Content -Raw '${promptPathEscaped}'\n` +
-    `claude --dangerously-skip-permissions -p $prompt\n`
-  );
 
   console.log(YELLOW + "🤖 Running AI setup..." + RESET);
-  try {
-    execSync(`powershell -ExecutionPolicy Bypass -File "${scriptPath}"`, { stdio: "inherit" });
-    fs.rmSync(setupPromptPath, { force: true });
+  const result = spawnSync("claude", ["--dangerously-skip-permissions", "-p"], {
+    input: promptContent,
+    stdio: ["pipe", "inherit", "inherit"],
+  });
+
+  if (result.status === 0) {
     const committed = commitIfDirty("CHORE: AI project setup");
     if (!committed) console.log(YELLOW + "⚠️  Nothing to commit after AI setup." + RESET);
     console.log(GREEN + "✅ AI setup complete." + RESET);
-  } catch (e) {
-    console.log(YELLOW + "⚠️  AI setup failed: " + e.message + RESET);
-  } finally {
-    fs.rmSync(setupPromptPath, { force: true });
-    fs.rmSync(scriptPath, { force: true });
+  } else {
+    console.log(YELLOW + "⚠️  AI setup failed." + RESET);
   }
 }
 

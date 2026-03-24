@@ -2,7 +2,7 @@
 
 const fs = require("fs");
 const path = require("path");
-const { execSync } = require("child_process");
+const { execSync, spawnSync } = require("child_process");
 const state = require("../state");
 const { RED, YELLOW, RESET } = require("./colors");
 
@@ -24,7 +24,7 @@ function runClaudeCli(promptFile) {
 
   if (!fs.existsSync(promptPath)) {
     console.log(RED + `❌ Prompt file not found: ${promptPath}` + RESET);
-    console.log(YELLOW + `💡 Run it manually: claude < "${promptPath}"` + RESET);
+    console.log(YELLOW + `💡 Run it manually: claude -p < "${promptPath}"` + RESET);
     return false;
   }
 
@@ -35,18 +35,20 @@ function runClaudeCli(promptFile) {
     );
   } catch (e) {
     console.log(RED + "❌ Claude CLI not found on PATH." + RESET);
-    console.log(YELLOW + `💡 Run it manually: claude < "${promptPath}"` + RESET);
+    console.log(YELLOW + `💡 Run it manually: claude -p < "${promptPath}"` + RESET);
     return false;
   }
 
-  try {
-    execSync(`claude -p < "${promptPath}"`, { stdio: "inherit" });
-    return true;
-  } catch (e) {
+  const result = spawnSync("claude", ["-p"], {
+    input: fs.readFileSync(promptPath),
+    stdio: ["pipe", "inherit", "inherit"],
+  });
+  if (result.status !== 0) {
     console.log(RED + "❌ Claude CLI call failed." + RESET);
     console.log(YELLOW + `💡 Run it manually: claude -p < "${promptPath}"` + RESET);
     return false;
   }
+  return true;
 }
 
 module.exports = { commitIfDirty, runClaudeCli };
