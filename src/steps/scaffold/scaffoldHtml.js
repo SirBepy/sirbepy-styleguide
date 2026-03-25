@@ -4,7 +4,7 @@ const fs = require("fs");
 const path = require("path");
 const { execSync } = require("child_process");
 const state = require("../../state");
-const { track, copyTemplate } = require("../../shared/files");
+const { track, copyTemplate, mergeGitignore } = require("../../shared/files");
 const { GREEN, YELLOW, RESET } = require("../../shared/colors");
 
 async function stepScaffoldHtml() {
@@ -82,7 +82,7 @@ async function stepScaffoldHtml() {
   track(path.resolve(".github"));
   copyTemplate("html/deploy.yml", path.join(workflowDir, "deploy.yml"), {});
 
-  copyTemplate("html/gitignore", path.resolve(".gitignore"), {});
+  mergeGitignore(path.resolve(".gitignore"));
   copyTemplate(".prettierrc", path.resolve(".prettierrc"), {});
 
   if (!fs.existsSync(".git")) {
