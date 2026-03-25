@@ -7,6 +7,7 @@ const { GREEN, RED, YELLOW, RESET } = require("../shared/colors");
 
 const CONFIG_RE = /\.config\.(js|ts|mjs|cjs)$/;
 const SW_RE = /^(sw|service-?worker|firebase-messaging-sw)\.js$/i;
+const IMAGE_RE = /\.(png|jpe?g|gif|svg|webp|avif)$/i;
 const isWorkflow = (f) => f.endsWith(".yml") || f.endsWith(".yaml");
 
 function detectMissing() {
@@ -60,26 +61,55 @@ function detectMisplaced() {
 
   if (fs.existsSync("assets")) {
     for (const entry of fs.readdirSync("assets", { withFileTypes: true })) {
-      if (!entry.isFile()) continue;
-      const name = entry.name;
-      if (name.endsWith(".js")) {
-        misplaced.push(`assets/${name} → assets/scripts/${name}`);
-      } else if (name.endsWith(".css") || name.endsWith(".scss")) {
-        misplaced.push(`assets/${name} → assets/styles/${name}`);
+      if (entry.isFile()) {
+        const name = entry.name;
+        if (name.endsWith(".js")) {
+          misplaced.push(`assets/${name} → assets/scripts/${name}`);
+        } else if (name.endsWith(".css") || name.endsWith(".scss")) {
+          misplaced.push(`assets/${name} → assets/styles/${name}`);
+        } else if (IMAGE_RE.test(name)) {
+          misplaced.push(`assets/${name} → assets/images/${name}`);
+        }
+      } else if (entry.isDirectory()) {
+        const dirName = entry.name;
+        if (dirName === "scripts" || dirName === "styles" || dirName === "images") continue;
+        const subDir = path.join("assets", dirName);
+        for (const file of fs.readdirSync(subDir, { withFileTypes: true })) {
+          if (!file.isFile()) continue;
+          const name = file.name;
+          if (name.endsWith(".js")) {
+            misplaced.push(`assets/${dirName}/${name} → assets/scripts/${name}`);
+          } else if (name.endsWith(".css") || name.endsWith(".scss")) {
+            misplaced.push(`assets/${dirName}/${name} → assets/styles/${name}`);
+          } else if (IMAGE_RE.test(name)) {
+            misplaced.push(`assets/${dirName}/${name} → assets/images/${name}`);
+          }
+        }
       }
     }
   }
 
   for (const entry of fs.readdirSync(".", { withFileTypes: true })) {
-    if (!entry.isFile()) continue;
-    const name = entry.name;
-    if (name.startsWith(".") || CONFIG_RE.test(name) || SW_RE.test(name)) continue;
-    if (name.endsWith(".js")) {
-      misplaced.push(`${name} → assets/scripts/${name}`);
-    } else if (name.endsWith(".css") || name.endsWith(".scss")) {
-      misplaced.push(`${name} → assets/styles/${name}`);
-    } else if ((name.endsWith(".ts") || name.endsWith(".tsx")) && !name.endsWith(".d.ts")) {
-      misplaced.push(`${name} → src/${name}`);
+    if (entry.isFile()) {
+      const name = entry.name;
+      if (name.startsWith(".") || CONFIG_RE.test(name) || SW_RE.test(name)) continue;
+      if (name.endsWith(".js")) {
+        misplaced.push(`${name} → assets/scripts/${name}`);
+      } else if (name.endsWith(".css") || name.endsWith(".scss")) {
+        misplaced.push(`${name} → assets/styles/${name}`);
+      } else if ((name.endsWith(".ts") || name.endsWith(".tsx")) && !name.endsWith(".d.ts")) {
+        misplaced.push(`${name} → src/${name}`);
+      } else if (IMAGE_RE.test(name)) {
+        misplaced.push(`${name} → assets/images/${name}`);
+      }
+    } else if (entry.isDirectory()) {
+      const dirName = entry.name;
+      if (dirName !== "images" && dirName !== "img") continue;
+      const dirPath = path.join(".", dirName);
+      for (const file of fs.readdirSync(dirPath, { withFileTypes: true })) {
+        if (!file.isFile()) continue;
+        misplaced.push(`${dirName}/${file.name} → assets/images/${file.name}`);
+      }
     }
   }
 
@@ -106,28 +136,72 @@ function migrateLooseFiles() {
 
   if (fs.existsSync("assets")) {
     for (const entry of fs.readdirSync("assets", { withFileTypes: true })) {
-      if (!entry.isFile()) continue;
-      const name = entry.name;
-      const src = path.resolve("assets", name);
-      if (name.endsWith(".js")) {
-        moveFile(src, "assets/scripts", "assets/" + name);
-      } else if (name.endsWith(".css") || name.endsWith(".scss")) {
-        moveFile(src, "assets/styles", "assets/" + name);
+      if (entry.isFile()) {
+        const name = entry.name;
+        const src = path.resolve("assets", name);
+        if (name.endsWith(".js")) {
+          moveFile(src, "assets/scripts", "assets/" + name);
+        } else if (name.endsWith(".css") || name.endsWith(".scss")) {
+          moveFile(src, "assets/styles", "assets/" + name);
+        } else if (IMAGE_RE.test(name)) {
+          fs.mkdirSync(path.resolve("assets/images"), { recursive: true });
+          moveFile(src, "assets/images", "assets/" + name);
+        }
+      } else if (entry.isDirectory()) {
+        const dirName = entry.name;
+        if (dirName === "scripts" || dirName === "styles" || dirName === "images") continue;
+        const subDir = path.resolve("assets", dirName);
+        for (const file of fs.readdirSync(subDir, { withFileTypes: true })) {
+          if (!file.isFile()) continue;
+          const name = file.name;
+          const src = path.join(subDir, name);
+          const relPath = `assets/${dirName}/${name}`;
+          if (name.endsWith(".js")) {
+            moveFile(src, "assets/scripts", relPath);
+          } else if (name.endsWith(".css") || name.endsWith(".scss")) {
+            moveFile(src, "assets/styles", relPath);
+          } else if (IMAGE_RE.test(name)) {
+            fs.mkdirSync(path.resolve("assets/images"), { recursive: true });
+            moveFile(src, "assets/images", relPath);
+          }
+        }
+        // remove the subfolder if it's now empty
+        if (fs.readdirSync(subDir).length === 0) {
+          fs.rmdirSync(subDir);
+          console.log(YELLOW + `🗑️  Removed empty folder assets/${dirName}/` + RESET);
+        }
       }
     }
   }
 
   for (const entry of fs.readdirSync(".", { withFileTypes: true })) {
-    if (!entry.isFile()) continue;
-    const name = entry.name;
-    if (name.startsWith(".") || CONFIG_RE.test(name) || SW_RE.test(name)) continue;
-    const src = path.resolve(name);
-    if (name.endsWith(".js")) {
-      moveFile(src, "assets/scripts", name);
-    } else if (name.endsWith(".css") || name.endsWith(".scss")) {
-      moveFile(src, "assets/styles", name);
-    } else if ((name.endsWith(".ts") || name.endsWith(".tsx")) && !name.endsWith(".d.ts")) {
-      moveFile(src, "src", name);
+    if (entry.isFile()) {
+      const name = entry.name;
+      if (name.startsWith(".") || CONFIG_RE.test(name) || SW_RE.test(name)) continue;
+      const src = path.resolve(name);
+      if (name.endsWith(".js")) {
+        moveFile(src, "assets/scripts", name);
+      } else if (name.endsWith(".css") || name.endsWith(".scss")) {
+        moveFile(src, "assets/styles", name);
+      } else if ((name.endsWith(".ts") || name.endsWith(".tsx")) && !name.endsWith(".d.ts")) {
+        moveFile(src, "src", name);
+      } else if (IMAGE_RE.test(name)) {
+        fs.mkdirSync(path.resolve("assets/images"), { recursive: true });
+        moveFile(src, "assets/images", name);
+      }
+    } else if (entry.isDirectory()) {
+      const dirName = entry.name;
+      if (dirName !== "images" && dirName !== "img") continue;
+      const dirPath = path.resolve(dirName);
+      fs.mkdirSync(path.resolve("assets/images"), { recursive: true });
+      for (const file of fs.readdirSync(dirPath, { withFileTypes: true })) {
+        if (!file.isFile()) continue;
+        moveFile(path.join(dirPath, file.name), "assets/images", `${dirName}/${file.name}`);
+      }
+      if (fs.readdirSync(dirPath).length === 0) {
+        fs.rmdirSync(dirPath);
+        console.log(YELLOW + `🗑️  Removed empty folder ${dirName}/` + RESET);
+      }
     }
   }
 

@@ -48,14 +48,29 @@ async function stepPublish() {
     }
 
     try {
-      execSync(
-        "gh api --method POST repos/" + owner + "/" + state.projectName + "/pages --field build_type=workflow",
-        { stdio: "pipe" },
-      );
+      try {
+        execSync(
+          "gh api --method POST repos/" + owner + "/" + state.projectName + "/pages --field build_type=workflow",
+          { stdio: "pipe" },
+        );
+      } catch (postErr) {
+        const msg = postErr.stderr ? postErr.stderr.toString() : postErr.message;
+        if (msg.includes("409") || msg.includes("already enabled") || msg.includes("Conflict")) {
+          // Pages already enabled — update it to use workflow source
+          execSync(
+            "gh api --method PUT repos/" + owner + "/" + state.projectName + "/pages --field build_type=workflow",
+            { stdio: "pipe" },
+          );
+        } else {
+          throw postErr;
+        }
+      }
       console.log(GREEN + "✅ GitHub Pages enabled." + RESET);
       console.log(GREEN + "   Pages URL: https://" + owner + ".github.io/" + state.projectName + RESET);
     } catch (e) {
+      const detail = e.stderr ? e.stderr.toString().trim() : e.message;
       console.log(YELLOW + "⚠️  Could not auto-enable GitHub Pages. Enable it manually in repo settings." + RESET);
+      if (detail) console.log(YELLOW + "   Reason: " + detail + RESET);
     }
 
     console.log(GREEN + "✅ Repo: https://github.com/" + owner + "/" + state.projectName + RESET);
