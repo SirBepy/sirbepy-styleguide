@@ -37,7 +37,16 @@ async function stepProjectName() {
   }
 
   const defaultName = toSnakeCase(repoName || folderName);
-  const name = await prompt("Project name?", defaultName);
+  const namesMatch = !repoName || folderName === repoName;
+  const alreadySnake = defaultName === (repoName || folderName);
+
+  let name;
+  if (namesMatch && alreadySnake) {
+    name = folderName;
+    console.log(CYAN + "  Name:    " + name + " ✓" + RESET);
+  } else {
+    name = await prompt("Project name?", defaultName);
+  }
 
   const folderChanged = name !== folderName;
   const repoChanged = repoName && name !== repoName;
