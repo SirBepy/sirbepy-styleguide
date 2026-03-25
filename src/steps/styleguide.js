@@ -15,7 +15,6 @@ async function stepStyleguide() {
   }
   console.log(YELLOW + "🎨 Setting up styleguide..." + RESET);
   fs.mkdirSync(path.resolve("src/styles/components"), { recursive: true });
-  copyTemplate("styleguide.scss", path.resolve("src/styles/styleguide.scss"), {});
   copyTemplate("base.scss", path.resolve("src/styles/base.scss"), {});
   if (state.framework === "vite") {
     copyTemplate("vite/styles.scss", path.resolve("src/styles/styles.scss"), {});
