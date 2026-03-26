@@ -10,6 +10,12 @@ const SW_RE = /^(sw|service-?worker|firebase-messaging-sw)\.js$/i;
 const IMAGE_RE = /\.(png|jpe?g|gif|svg|webp|avif)$/i;
 const isWorkflow = (f) => f.endsWith(".yml") || f.endsWith(".yaml");
 
+// Convention:
+//   src/           — JS and CSS/SCSS
+//   assets/images/ — images
+//   assets/styles/themes/ — theme CSS (served statically, stays here)
+//   root           — .ico files
+
 function detectMissing() {
   const missing = [];
 
@@ -59,14 +65,13 @@ function detectMissing() {
 function detectMisplaced() {
   const misplaced = [];
 
+  // --- assets/ root-level files ---
   if (fs.existsSync("assets")) {
     for (const entry of fs.readdirSync("assets", { withFileTypes: true })) {
       if (entry.isFile()) {
         const name = entry.name;
-        if (name.endsWith(".js")) {
-          misplaced.push(`assets/${name} → assets/scripts/${name}`);
-        } else if (name.endsWith(".css") || name.endsWith(".scss")) {
-          misplaced.push(`assets/${name} → assets/styles/${name}`);
+        if (name.endsWith(".js") || name.endsWith(".css") || name.endsWith(".scss")) {
+          misplaced.push(`assets/${name} → src/${name}`);
         } else if (name.endsWith(".ico")) {
           misplaced.push(`assets/${name} → ${name}`);
         } else if (IMAGE_RE.test(name)) {
@@ -74,25 +79,48 @@ function detectMisplaced() {
         }
       } else if (entry.isDirectory()) {
         const dirName = entry.name;
-        // scan assets/images/ only for misplaced .ico files — everything else belongs there
+
+        // assets/images/ — only .ico files are misplaced here
         if (dirName === "images") {
-          const imagesDir = path.join("assets", "images");
-          for (const file of fs.readdirSync(imagesDir, { withFileTypes: true })) {
+          for (const file of fs.readdirSync(path.join("assets", "images"), { withFileTypes: true })) {
             if (file.isFile() && file.name.endsWith(".ico")) {
               misplaced.push(`assets/images/${file.name} → ${file.name}`);
             }
           }
           continue;
         }
-        if (dirName === "scripts" || dirName === "styles") continue;
+
+        // assets/scripts/ — all JS belongs in src/ now
+        if (dirName === "scripts") {
+          for (const file of fs.readdirSync(path.join("assets", "scripts"), { withFileTypes: true })) {
+            if (!file.isFile()) continue;
+            const name = file.name;
+            if (name.endsWith(".js")) {
+              misplaced.push(`assets/scripts/${name} → src/${name}`);
+            }
+          }
+          continue;
+        }
+
+        // assets/styles/ — CSS/SCSS belongs in src/, but themes/ stays here
+        if (dirName === "styles") {
+          for (const file of fs.readdirSync(path.join("assets", "styles"), { withFileTypes: true })) {
+            if (!file.isFile()) continue;
+            const name = file.name;
+            if (name.endsWith(".css") || name.endsWith(".scss")) {
+              misplaced.push(`assets/styles/${name} → src/${name}`);
+            }
+          }
+          continue;
+        }
+
+        // other assets/ subdirs
         const subDir = path.join("assets", dirName);
         for (const file of fs.readdirSync(subDir, { withFileTypes: true })) {
           if (!file.isFile()) continue;
           const name = file.name;
-          if (name.endsWith(".js")) {
-            misplaced.push(`assets/${dirName}/${name} → assets/scripts/${name}`);
-          } else if (name.endsWith(".css") || name.endsWith(".scss")) {
-            misplaced.push(`assets/${dirName}/${name} → assets/styles/${name}`);
+          if (name.endsWith(".js") || name.endsWith(".css") || name.endsWith(".scss")) {
+            misplaced.push(`assets/${dirName}/${name} → src/${name}`);
           } else if (name.endsWith(".ico")) {
             misplaced.push(`assets/${dirName}/${name} → ${name}`);
           } else if (IMAGE_RE.test(name)) {
@@ -103,14 +131,13 @@ function detectMisplaced() {
     }
   }
 
+  // --- project root files ---
   for (const entry of fs.readdirSync(".", { withFileTypes: true })) {
     if (entry.isFile()) {
       const name = entry.name;
       if (name.startsWith(".") || CONFIG_RE.test(name) || SW_RE.test(name)) continue;
-      if (name.endsWith(".js")) {
-        misplaced.push(`${name} → assets/scripts/${name}`);
-      } else if (name.endsWith(".css") || name.endsWith(".scss")) {
-        misplaced.push(`${name} → assets/styles/${name}`);
+      if (name.endsWith(".js") || name.endsWith(".css") || name.endsWith(".scss")) {
+        misplaced.push(`${name} → src/${name}`);
       } else if ((name.endsWith(".ts") || name.endsWith(".tsx")) && !name.endsWith(".d.ts")) {
         misplaced.push(`${name} → src/${name}`);
       } else if (IMAGE_RE.test(name)) {
@@ -119,10 +146,19 @@ function detectMisplaced() {
     } else if (entry.isDirectory()) {
       const dirName = entry.name;
       if (dirName !== "images" && dirName !== "img") continue;
-      const dirPath = path.join(".", dirName);
-      for (const file of fs.readdirSync(dirPath, { withFileTypes: true })) {
+      for (const file of fs.readdirSync(path.join(".", dirName), { withFileTypes: true })) {
         if (!file.isFile()) continue;
         misplaced.push(`${dirName}/${file.name} → assets/images/${file.name}`);
+      }
+    }
+  }
+
+  // --- src/ root-level images belong in assets/images/ ---
+  if (fs.existsSync("src")) {
+    for (const file of fs.readdirSync("src", { withFileTypes: true })) {
+      if (!file.isFile()) continue;
+      if (IMAGE_RE.test(file.name)) {
+        misplaced.push(`src/${file.name} → assets/images/${file.name}`);
       }
     }
   }
@@ -131,8 +167,6 @@ function detectMisplaced() {
 }
 
 function migrateLooseFiles() {
-  fs.mkdirSync(path.resolve("assets/scripts"), { recursive: true });
-  fs.mkdirSync(path.resolve("assets/styles"), { recursive: true });
   fs.mkdirSync(path.resolve("src"), { recursive: true });
 
   const moves = [];
@@ -148,67 +182,88 @@ function migrateLooseFiles() {
     }
   }
 
+  function moveIcoToRoot(src, oldRelPath) {
+    const name = path.basename(src);
+    const dest = path.resolve(name);
+    if (!fs.existsSync(dest)) {
+      fs.renameSync(src, dest);
+      moves.push({ old: oldRelPath, new: name });
+      console.log(YELLOW + `📁 Moved ${oldRelPath} → ${name}` + RESET);
+    }
+  }
+
   if (fs.existsSync("assets")) {
     for (const entry of fs.readdirSync("assets", { withFileTypes: true })) {
       if (entry.isFile()) {
         const name = entry.name;
         const src = path.resolve("assets", name);
-        if (name.endsWith(".js")) {
-          moveFile(src, "assets/scripts", "assets/" + name);
-        } else if (name.endsWith(".css") || name.endsWith(".scss")) {
-          moveFile(src, "assets/styles", "assets/" + name);
+        if (name.endsWith(".js") || name.endsWith(".css") || name.endsWith(".scss")) {
+          moveFile(src, "src", "assets/" + name);
         } else if (name.endsWith(".ico")) {
-          const dest = path.resolve(name);
-          if (!fs.existsSync(dest)) {
-            fs.renameSync(src, dest);
-            moves.push({ old: "assets/" + name, new: name });
-            console.log(YELLOW + `📁 Moved assets/${name} → ${name}` + RESET);
-          }
+          moveIcoToRoot(src, "assets/" + name);
         } else if (IMAGE_RE.test(name)) {
           fs.mkdirSync(path.resolve("assets/images"), { recursive: true });
           moveFile(src, "assets/images", "assets/" + name);
         }
       } else if (entry.isDirectory()) {
         const dirName = entry.name;
-        // scan assets/images/ only for misplaced .ico files — everything else belongs there
+
+        // assets/images/ — only drain .ico files to root
         if (dirName === "images") {
           const imagesDir = path.resolve("assets", "images");
           for (const file of fs.readdirSync(imagesDir, { withFileTypes: true })) {
             if (!file.isFile() || !file.name.endsWith(".ico")) continue;
-            const src = path.join(imagesDir, file.name);
-            const dest = path.resolve(file.name);
-            if (!fs.existsSync(dest)) {
-              fs.renameSync(src, dest);
-              moves.push({ old: `assets/images/${file.name}`, new: file.name });
-              console.log(YELLOW + `📁 Moved assets/images/${file.name} → ${file.name}` + RESET);
-            }
+            moveIcoToRoot(path.join(imagesDir, file.name), `assets/images/${file.name}`);
           }
           continue;
         }
-        if (dirName === "scripts" || dirName === "styles") continue;
+
+        // assets/scripts/ — drain all JS to src/
+        if (dirName === "scripts") {
+          const scriptsDir = path.resolve("assets", "scripts");
+          for (const file of fs.readdirSync(scriptsDir, { withFileTypes: true })) {
+            if (!file.isFile()) continue;
+            if (file.name.endsWith(".js")) {
+              moveFile(path.join(scriptsDir, file.name), "src", `assets/scripts/${file.name}`);
+            }
+          }
+          if (fs.readdirSync(scriptsDir).length === 0) {
+            fs.rmdirSync(scriptsDir);
+            console.log(YELLOW + "🗑️  Removed empty folder assets/scripts/" + RESET);
+          }
+          continue;
+        }
+
+        // assets/styles/ — drain root CSS/SCSS to src/, leave themes/ alone
+        if (dirName === "styles") {
+          const stylesDir = path.resolve("assets", "styles");
+          for (const file of fs.readdirSync(stylesDir, { withFileTypes: true })) {
+            if (!file.isFile()) continue;
+            const name = file.name;
+            if (name.endsWith(".css") || name.endsWith(".scss")) {
+              moveFile(path.join(stylesDir, file.name), "src", `assets/styles/${name}`);
+            }
+          }
+          // don't remove assets/styles/ — themes/ subdir lives there
+          continue;
+        }
+
+        // other assets/ subdirs
         const subDir = path.resolve("assets", dirName);
         for (const file of fs.readdirSync(subDir, { withFileTypes: true })) {
           if (!file.isFile()) continue;
           const name = file.name;
           const src = path.join(subDir, name);
           const relPath = `assets/${dirName}/${name}`;
-          if (name.endsWith(".js")) {
-            moveFile(src, "assets/scripts", relPath);
-          } else if (name.endsWith(".css") || name.endsWith(".scss")) {
-            moveFile(src, "assets/styles", relPath);
+          if (name.endsWith(".js") || name.endsWith(".css") || name.endsWith(".scss")) {
+            moveFile(src, "src", relPath);
           } else if (name.endsWith(".ico")) {
-            const dest = path.resolve(name);
-            if (!fs.existsSync(dest)) {
-              fs.renameSync(src, dest);
-              moves.push({ old: relPath, new: name });
-              console.log(YELLOW + `📁 Moved ${relPath} → ${name}` + RESET);
-            }
+            moveIcoToRoot(src, relPath);
           } else if (IMAGE_RE.test(name)) {
             fs.mkdirSync(path.resolve("assets/images"), { recursive: true });
             moveFile(src, "assets/images", relPath);
           }
         }
-        // remove the subfolder if it's now empty
         if (fs.readdirSync(subDir).length === 0) {
           fs.rmdirSync(subDir);
           console.log(YELLOW + `🗑️  Removed empty folder assets/${dirName}/` + RESET);
@@ -217,15 +272,14 @@ function migrateLooseFiles() {
     }
   }
 
+  // --- project root files ---
   for (const entry of fs.readdirSync(".", { withFileTypes: true })) {
     if (entry.isFile()) {
       const name = entry.name;
       if (name.startsWith(".") || CONFIG_RE.test(name) || SW_RE.test(name)) continue;
       const src = path.resolve(name);
-      if (name.endsWith(".js")) {
-        moveFile(src, "assets/scripts", name);
-      } else if (name.endsWith(".css") || name.endsWith(".scss")) {
-        moveFile(src, "assets/styles", name);
+      if (name.endsWith(".js") || name.endsWith(".css") || name.endsWith(".scss")) {
+        moveFile(src, "src", name);
       } else if ((name.endsWith(".ts") || name.endsWith(".tsx")) && !name.endsWith(".d.ts")) {
         moveFile(src, "src", name);
       } else if (IMAGE_RE.test(name)) {
@@ -245,6 +299,15 @@ function migrateLooseFiles() {
         fs.rmdirSync(dirPath);
         console.log(YELLOW + `🗑️  Removed empty folder ${dirName}/` + RESET);
       }
+    }
+  }
+
+  // --- src/ root-level images belong in assets/images/ ---
+  if (fs.existsSync("src")) {
+    for (const file of fs.readdirSync("src", { withFileTypes: true })) {
+      if (!file.isFile() || !IMAGE_RE.test(file.name)) continue;
+      fs.mkdirSync(path.resolve("assets/images"), { recursive: true });
+      moveFile(path.resolve("src", file.name), "assets/images", `src/${file.name}`);
     }
   }
 

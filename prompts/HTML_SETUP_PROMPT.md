@@ -88,18 +88,20 @@ Only split if there is a clear boundary. Do not split a small or simple script.
 
 ## Step 1 — Favicon
 
-Check if `src/favicon.png` exists. If it doesn't:
+Check if `assets/images/favicon.png` exists. If it doesn't, also check `src/favicon.png` (legacy location). If found in `src/`, move it to `assets/images/favicon.png` and update the `<link rel="icon">` href in `index.html`.
+
+If neither exists:
 
 1. Look at the project name, `index.html`, and any existing code to understand what this project is
 2. Design a simple, bold SVG icon that fits the project — solid shapes, minimal detail (it will be shown at 32px)
-3. Write the SVG to `src/favicon.svg`
-4. Run: `node "{{SVG_TO_PNG_PATH}}" src/favicon.svg src/favicon.png 256`
+3. Write the SVG to `assets/images/favicon.svg`
+4. Run: `node "{{SVG_TO_PNG_PATH}}" assets/images/favicon.svg assets/images/favicon.png 256`
 5. Add inside `<head>` in `index.html`:
    ```html
-   <link rel="icon" type="image/png" href="src/favicon.png">
+   <link rel="icon" type="image/png" href="assets/images/favicon.png">
    ```
 
-If `src/favicon.png` already exists, skip this step.
+If `assets/images/favicon.png` already exists, skip this step.
 
 ---
 
@@ -135,7 +137,7 @@ Open `index.html` and check for these meta tags. Add any that are missing:
 <meta name="description" content="...">
 <meta property="og:title" content="...">
 <meta property="og:description" content="...">
-<meta property="og:image" content="src/favicon.png">
+<meta property="og:image" content="assets/images/favicon.png">
 <meta name="twitter:card" content="summary">
 ```
 
