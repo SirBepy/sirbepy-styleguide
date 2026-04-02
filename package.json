@@ -1,34 +1,6 @@
 {
-  "name": "bepy-project-init",
-  "version": "1.0.26",
-  "description": "CLI tool for initializing new personal web projects with a single command",
-  "bin": {
-    "bepy": "./init.js"
-  },
-  "files": [
-    "init.js",
-    "src/",
-    "svg-to-png.js",
-    "themes/",
-    "widget/",
-    "templates/",
-    "prompts/"
-  ],
-  "engines": {
-    "node": ">=18"
-  },
-  "dependencies": {
-    "inquirer": "^8.2.7",
-    "sharp": "^0.33.0"
-  },
-  "scripts": {
-    "test": "jest"
-  },
-  "jest": {
-    "testEnvironment": "node",
-    "testMatch": ["**/tests/**/*.test.js"]
-  },
-  "devDependencies": {
-    "jest": "^30.3.0"
-  }
+  "name": "bepy-styleguide",
+  "version": "2.0.0",
+  "description": "Joe's design system - themes, components, and styleguide hosted on CDN",
+  "private": true
 }

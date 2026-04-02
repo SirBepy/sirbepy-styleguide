@@ -1,7 +1,0 @@
-.DS_Store
-Thumbs.db
-*.log
-node_modules/
-.bepy-setup.md
-.bepy-setup.ps1
-WORKFLOWS_FOR_SIRBEPY.md
