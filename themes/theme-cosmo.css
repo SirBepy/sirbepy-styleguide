@@ -1,6 +1,7 @@
 /* Cosmo */
 [data-theme="cosmo"] {
   --color-primary: #f97316;
+  --color-primary-rgb: 249, 115, 22;
   --color-secondary: #ec4899;
   --color-accent: #fb923c;
   --color-background: #1a1015;

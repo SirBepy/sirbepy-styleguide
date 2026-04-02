@@ -1,6 +1,7 @@
 /* Nebula */
 [data-theme="nebula"] {
   --color-primary: #2dd4bf;
+  --color-primary-rgb: 45, 212, 191;
   --color-secondary: #e879f9;
   --color-accent: #2dd4bf;
   --color-background: #080b12;
