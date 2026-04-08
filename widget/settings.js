@@ -198,24 +198,29 @@
     header.appendChild(elCloseBtn);
     elPanel.appendChild(header);
 
-    // APP section
+    // APP section (hidden later if local build)
+    var elAppSection = document.createElement("div");
+    elAppSection.className = "tl-app-section";
+
     const appLabel = document.createElement("div");
     appLabel.className = "tl-section-label";
     appLabel.textContent = "APP";
-    elPanel.appendChild(appLabel);
+    elAppSection.appendChild(appLabel);
 
     elAppName = document.createElement("div");
     elAppName.className = "tl-app-name";
     elAppName.textContent = "";
-    elPanel.appendChild(elAppName);
+    elAppSection.appendChild(elAppName);
 
     elAppDesc = document.createElement("div");
     elAppDesc.className = "tl-app-desc";
-    elPanel.appendChild(elAppDesc);
+    elAppSection.appendChild(elAppDesc);
 
     elBuildTime = document.createElement("div");
     elBuildTime.className = "tl-build-time";
-    elPanel.appendChild(elBuildTime);
+    elAppSection.appendChild(elBuildTime);
+
+    elPanel.appendChild(elAppSection);
 
     // THEME section
     const themeLabel = document.createElement("div");
@@ -261,11 +266,6 @@
     aboutName.className = "tl-about-name";
     aboutName.textContent = AUTHOR.name;
     elPanel.appendChild(aboutName);
-
-    // const aboutMeta = document.createElement("div");
-    // aboutMeta.className = "tl-about-meta";
-    // aboutMeta.textContent = AUTHOR.company + " · " + AUTHOR.location;
-    // elPanel.appendChild(aboutMeta);
 
     const aboutLinks = document.createElement("div");
     aboutLinks.className = "tl-about-links";
@@ -563,6 +563,10 @@
     const ts = window.BUILD_TIMESTAMP;
     const rel = getRelativeTime(ts);
     elBuildTime.textContent = "Built: " + rel;
+    if (rel === "Local build") {
+      var appSection = document.querySelector(".tl-app-section");
+      if (appSection) appSection.style.display = "none";
+    }
   }
 
   // ─── 11. Init ─────────────────────────────────────────────────────────────
