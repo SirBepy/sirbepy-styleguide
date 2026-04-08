@@ -1,4 +1,4 @@
-/* Cosmo */
+/* Cosmo - Dark */
 [data-theme="cosmo"] {
   --color-primary: #f97316;
   --color-primary-rgb: 249, 115, 22;
@@ -19,4 +19,22 @@
   --radius-card: 12px;
   --radius-badge: 8px;
   --shadow-card: 0 4px 20px rgba(0, 0, 0, 0.4);
+}
+
+/* Cosmo - Light */
+[data-theme="cosmo"][data-mode="light"] {
+  --color-primary: #ea6c0a;
+  --color-primary-rgb: 234, 108, 10;
+  --color-secondary: #db2777;
+  --color-accent: #f59e0b;
+  --color-background: #fdf6f3;
+  --color-surface: #ffffff;
+  --color-surface-alt: #f8f0ec;
+  --color-text: #2a1520;
+  --color-text-muted: #9a7888;
+  --color-border: #e8d8e0;
+  --color-success: #16a34a;
+  --color-info: #ea6c0a;
+  --badge-tech-bg: #f5ece8;
+  --shadow-card: 0 4px 20px rgba(160,60,20,0.08);
 }

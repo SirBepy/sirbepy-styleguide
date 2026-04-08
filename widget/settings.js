@@ -10,13 +10,15 @@
   const FEEDBACK_URL = "https://forms.gle/AGPabTu624aMaayE7";
   const FALLBACK_THEMES = ["void", "glacier", "cosmo", "nebula"];
   const LS_KEY = "tabs-labs-theme";
+  const LS_MODE_KEY = "tabs-labs-mode";
   const CDN_THEMES = "https://cdn.jsdelivr.net/gh/sirbepy/sirbepy-styleguide@main/themes/";
 
   // ─── DOM element references (set during renderPanel) ──────────────────────
 
   let elPanel, elBackdrop, elCogBtn, elCloseBtn;
-  let elAppName, elAppDesc, elBuildTime, elThemeBtns;
+  let elAppName, elAppDesc, elBuildTime, elThemeBtns, elModeBtns;
   let _savedBodyOverflow = null;
+  let _mediaQuery = null;
 
   // ─── 1. CSS Injection ─────────────────────────────────────────────────────
 
@@ -119,6 +121,20 @@
       }
       .tl-about-links { display: flex; gap: 0.4rem; }
       .tl-feedback-text { font-size: 0.8rem; color: var(--color-text-muted, #6b6990); }
+      .tl-mode-btns { display: flex; gap: 0.4rem; }
+      .tl-mode-btn {
+        background: var(--color-surface-alt, #242334);
+        border: 1px solid var(--color-border, #2d2c44);
+        border-radius: var(--radius-badge, 6px);
+        padding: 0.3rem 0.7rem; font-size: 0.8rem;
+        cursor: pointer; color: var(--color-text, #e2e0f0);
+        flex: 1; text-align: center;
+      }
+      .tl-mode-btn:hover { filter: brightness(1.2); }
+      .tl-mode-btn.tl-active {
+        border-color: var(--color-primary, #9d7dfc);
+        color: var(--color-primary, #9d7dfc);
+      }
     `;
     const style = document.createElement("style");
     style.textContent = css;
@@ -201,6 +217,18 @@
     elThemeBtns = document.createElement("div");
     elThemeBtns.className = "tl-theme-btns";
     elPanel.appendChild(elThemeBtns);
+
+    // MODE section
+    const modeLabel = document.createElement("div");
+    modeLabel.className = "tl-section-label";
+    modeLabel.textContent = "MODE";
+    elPanel.appendChild(modeLabel);
+
+    elModeBtns = document.createElement("div");
+    elModeBtns.className = "tl-mode-btns";
+    elPanel.appendChild(elModeBtns);
+
+    renderModeButtons();
 
     // ABOUT section
     const aboutLabel = document.createElement("div");
@@ -364,6 +392,59 @@
     });
   }
 
+  // ─── 6b. Mode logic ───────────────────────────────────────────────────────
+
+  function getResolvedMode(mode) {
+    if (mode === "auto") {
+      return window.matchMedia("(prefers-color-scheme: light)").matches
+        ? "light"
+        : "dark";
+    }
+    return mode;
+  }
+
+  function applyMode(mode) {
+    localStorage.setItem(LS_MODE_KEY, mode);
+    var resolved = getResolvedMode(mode);
+    if (resolved === "light") {
+      document.documentElement.setAttribute("data-mode", "light");
+    } else {
+      document.documentElement.removeAttribute("data-mode");
+    }
+    renderModeButtons();
+  }
+
+  function renderModeButtons() {
+    if (!elModeBtns) return;
+    elModeBtns.innerHTML = "";
+    var active = localStorage.getItem(LS_MODE_KEY) || "dark";
+    var modes = [
+      { key: "dark", label: "Dark" },
+      { key: "light", label: "Light" },
+      { key: "auto", label: "Auto" },
+    ];
+    modes.forEach(function (m) {
+      var btn = document.createElement("button");
+      btn.className = "tl-mode-btn";
+      btn.type = "button";
+      btn.textContent = m.key === active ? m.label + " ✓" : m.label;
+      if (m.key === active) btn.classList.add("tl-active");
+      btn.addEventListener("click", function () {
+        applyMode(m.key);
+      });
+      elModeBtns.appendChild(btn);
+    });
+  }
+
+  function initModeListener() {
+    _mediaQuery = window.matchMedia("(prefers-color-scheme: light)");
+    _mediaQuery.addEventListener("change", function () {
+      if ((localStorage.getItem(LS_MODE_KEY) || "dark") === "auto") {
+        applyMode("auto");
+      }
+    });
+  }
+
   // ─── 7. Theme list fetch ──────────────────────────────────────────────────
 
   async function loadThemeList() {
@@ -403,6 +484,15 @@
       .then(function (r) { return r.ok ? r.text() : Promise.reject(); })
       .then(applyCss)
       .catch(function () {});
+
+    // Restore saved mode
+    var savedMode = localStorage.getItem(LS_MODE_KEY) || "dark";
+    var resolved = getResolvedMode(savedMode);
+    if (resolved === "light") {
+      document.documentElement.setAttribute("data-mode", "light");
+    } else {
+      document.documentElement.removeAttribute("data-mode");
+    }
   }
 
   // ─── 9. App info fetch ────────────────────────────────────────────────────
@@ -441,6 +531,7 @@
     renderPanel();
     wireEvents();
     restoreSavedTheme();
+    initModeListener();
     populateBuildInfo();
     await loadAppInfo();
     await loadThemeList();
